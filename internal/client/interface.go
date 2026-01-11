@@ -62,4 +62,28 @@ type IgnitionClient interface {
 	CreateAlarmJournal(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
 	UpdateAlarmJournal(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
 	DeleteAlarmJournal(ctx context.Context, name, signature string) error
+
+	// SMTP Profiles
+	GetSMTPProfile(ctx context.Context, name string) (*ResourceResponse[SMTPProfileConfig], error)
+	CreateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	UpdateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	DeleteSMTPProfile(ctx context.Context, name, signature string) error
+
+	// Store and Forward
+	GetStoreAndForward(ctx context.Context, name string) (*ResourceResponse[StoreAndForwardConfig], error)
+	CreateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	UpdateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	DeleteStoreAndForward(ctx context.Context, name, signature string) error
+
+	// Identity Providers
+	GetIdentityProvider(ctx context.Context, name string) (*ResourceResponse[IdentityProviderConfig], error)
+	CreateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	UpdateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	DeleteIdentityProvider(ctx context.Context, name, signature string) error
+
+	// Gateway Network Outgoing
+	GetGanOutgoing(ctx context.Context, name string) (*ResourceResponse[GanOutgoingConfig], error)
+	CreateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	UpdateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	DeleteGanOutgoing(ctx context.Context, name, signature string) error
 }

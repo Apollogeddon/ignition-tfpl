@@ -157,6 +157,10 @@ func (p *IgnitionProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewAlarmNotificationProfileResource,
 		NewOpcUaConnectionResource,
 		NewAlarmJournalResource,
+		NewSMTPProfileResource,
+		NewStoreAndForwardResource,
+		NewIdentityProviderResource,
+		NewGanOutgoingResource,
 	}
 }
 
@@ -166,6 +170,8 @@ func (p *IgnitionProvider) DataSources(ctx context.Context) []func() datasource.
 		NewProjectDataSource,
 		NewUserSourceDataSource,
 		NewTagProviderDataSource,
+		NewSMTPProfileDataSource,
+		NewStoreAndForwardDataSource,
 	}
 }
 

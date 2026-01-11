@@ -198,6 +198,91 @@ type AlarmJournalConfig struct {
 	Settings AlarmJournalSettings `json:"settings"`
 }
 
+// SMTPProfileSettingsClassic represents the settings for a classic SMTP profile
+type SMTPProfileSettingsClassic struct {
+	Hostname        string `json:"hostname"`
+	Port            int    `json:"port"`
+	UseSslPort      bool   `json:"useSslPort"`
+	StartTlsEnabled bool   `json:"startTlsEnabled"`
+	Username        string `json:"username,omitempty"`
+	Password        any    `json:"password,omitempty"`
+}
+
+// SMTPProfileSettings represents the union of settings for Email profiles
+type SMTPProfileSettings struct {
+	Settings *SMTPProfileSettingsClassic `json:"settings,omitempty"`
+}
+
+// SMTPProfileProfile represents the profile configuration
+type SMTPProfileProfile struct {
+	Type string `json:"type"` // "smtp.classic" or "smtp.oauth2"
+}
+
+// SMTPProfileConfig represents the main config object for an Email profile
+type SMTPProfileConfig struct {
+	Profile  SMTPProfileProfile  `json:"profile"`
+	Settings SMTPProfileSettings `json:"settings"`
+}
+
+// StoreAndForwardMaintenancePolicy represents the maintenance policy for a datastore
+type StoreAndForwardMaintenancePolicy struct {
+	Action string `json:"action"`
+	Limit  struct {
+		LimitType string `json:"limitType"`
+		Value     int    `json:"value"`
+	} `json:"limit"`
+}
+
+// StoreAndForwardConfig represents the configuration for a Store and Forward Engine
+type StoreAndForwardConfig struct {
+	TimeThresholdMs            int                               `json:"timeThresholdMs"`
+	ForwardRateMs              int                               `json:"forwardRateMs"`
+	ForwardingPolicy           string                            `json:"forwardingPolicy"`
+	ForwardingSchedule         string                            `json:"forwardingSchedule,omitempty"`
+	IsThirdParty               bool                              `json:"isThirdParty"`
+	DataThreshold              int                               `json:"dataThreshold"`
+	BatchSize                  int                               `json:"batchSize"`
+	ScanRateMs                 int                               `json:"scanRateMs"`
+	PrimaryMaintenancePolicy   *StoreAndForwardMaintenancePolicy `json:"primaryMaintenancePolicy,omitempty"`
+	SecondaryMaintenancePolicy *StoreAndForwardMaintenancePolicy `json:"secondaryMaintenancePolicy,omitempty"`
+}
+
+// IdentityProviderAuthMethod represents an authentication method for an IdP
+type IdentityProviderAuthMethod struct {
+	Type   string `json:"type"` // "basic" or "badge"
+	Config any    `json:"config"`
+}
+
+// IdentityProviderInternalConfig represents the "internal" IdP type
+type IdentityProviderInternalConfig struct {
+	UserSource               string                       `json:"userSource"`
+	AuthMethods              []IdentityProviderAuthMethod `json:"authMethods"`
+	SessionInactivityTimeout float64                      `json:"sessionInactivityTimeout"`
+	SessionExp               float64                      `json:"sessionExp"`
+	RememberMeExp            float64                      `json:"rememberMeExp"`
+}
+
+// IdentityProviderConfig represents the main config object for an IdP
+type IdentityProviderConfig struct {
+	Type   string `json:"type"` // "internal", "oidc", "saml"
+	Config any    `json:"config"`
+}
+
+// GanOutgoingConfig represents the configuration for an outgoing GAN connection
+type GanOutgoingConfig struct {
+	Host                     string  `json:"host"`
+	Port                     int     `json:"port"`
+	UseSSL                   bool    `json:"useSSL"`
+	PingRateMillis           float64 `json:"pingRateMillis,omitempty"`
+	PingTimeoutMillis        float64 `json:"pingTimeoutMillis,omitempty"`
+	PingMaxMissed            float64 `json:"pingMaxMissed,omitempty"`
+	WsTimeoutMillis          float64 `json:"wsTimeoutMillis,omitempty"`
+	HttpConnectTimeoutMillis float64 `json:"httpConnectTimeoutMillis,omitempty"`
+	HttpReadTimeoutMillis    float64 `json:"httpReadTimeoutMillis,omitempty"`
+	SendThreads              float64 `json:"sendThreads,omitempty"`
+	ReceiveThreads           float64 `json:"receiveThreads,omitempty"`
+}
+
 // NewClient creates a new Ignition API client
 func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 	rc := retryablehttp.NewClient()
@@ -706,4 +791,136 @@ func (c *Client) UpdateAlarmJournal(ctx context.Context, item ResourceResponse[A
 
 func (c *Client) DeleteAlarmJournal(ctx context.Context, name, signature string) error {
 	return c.DeleteResourceWithModule(ctx, "ignition", "alarm-journal", name, signature)
+}
+
+// SMTP Profiles
+
+func (c *Client) GetSMTPProfile(ctx context.Context, name string) (*ResourceResponse[SMTPProfileConfig], error) {
+	var resp ResourceResponse[SMTPProfileConfig]
+	err := c.GetResource(ctx, "email-profile", name, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) CreateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
+	var resp ResourceResponse[SMTPProfileConfig]
+	err := c.CreateResource(ctx, "email-profile", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
+	var resp ResourceResponse[SMTPProfileConfig]
+	err := c.UpdateResource(ctx, "email-profile", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteSMTPProfile(ctx context.Context, name, signature string) error {
+	return c.DeleteResource(ctx, "email-profile", name, signature)
+}
+
+// Store and Forward
+
+func (c *Client) GetStoreAndForward(ctx context.Context, name string) (*ResourceResponse[StoreAndForwardConfig], error) {
+	var resp ResourceResponse[StoreAndForwardConfig]
+	err := c.GetResource(ctx, "store-and-forward-engine", name, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) CreateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
+	var resp ResourceResponse[StoreAndForwardConfig]
+	err := c.CreateResource(ctx, "store-and-forward-engine", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
+	var resp ResourceResponse[StoreAndForwardConfig]
+	err := c.UpdateResource(ctx, "store-and-forward-engine", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteStoreAndForward(ctx context.Context, name, signature string) error {
+	return c.DeleteResource(ctx, "store-and-forward-engine", name, signature)
+}
+
+// Identity Providers
+
+func (c *Client) GetIdentityProvider(ctx context.Context, name string) (*ResourceResponse[IdentityProviderConfig], error) {
+	var resp ResourceResponse[IdentityProviderConfig]
+	err := c.GetResource(ctx, "identity-provider", name, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) CreateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
+	var resp ResourceResponse[IdentityProviderConfig]
+	err := c.CreateResource(ctx, "identity-provider", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
+	var resp ResourceResponse[IdentityProviderConfig]
+	err := c.UpdateResource(ctx, "identity-provider", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteIdentityProvider(ctx context.Context, name, signature string) error {
+	return c.DeleteResource(ctx, "identity-provider", name, signature)
+}
+
+// Gateway Network Outgoing
+
+func (c *Client) GetGanOutgoing(ctx context.Context, name string) (*ResourceResponse[GanOutgoingConfig], error) {
+	var resp ResourceResponse[GanOutgoingConfig]
+	err := c.GetResource(ctx, "gateway-network-outgoing", name, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) CreateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
+	var resp ResourceResponse[GanOutgoingConfig]
+	err := c.CreateResource(ctx, "gateway-network-outgoing", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
+	var resp ResourceResponse[GanOutgoingConfig]
+	err := c.UpdateResource(ctx, "gateway-network-outgoing", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteGanOutgoing(ctx context.Context, name, signature string) error {
+	return c.DeleteResource(ctx, "gateway-network-outgoing", name, signature)
 }

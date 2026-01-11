@@ -61,6 +61,30 @@ type MockClient struct {
 	CreateAlarmJournalFunc func(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
 	UpdateAlarmJournalFunc func(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
 	DeleteAlarmJournalFunc func(ctx context.Context, name, signature string) error
+
+	// SMTP Profiles
+	GetSMTPProfileFunc    func(ctx context.Context, name string) (*ResourceResponse[SMTPProfileConfig], error)
+	CreateSMTPProfileFunc func(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	UpdateSMTPProfileFunc func(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	DeleteSMTPProfileFunc func(ctx context.Context, name, signature string) error
+
+	// Store and Forward
+	GetStoreAndForwardFunc    func(ctx context.Context, name string) (*ResourceResponse[StoreAndForwardConfig], error)
+	CreateStoreAndForwardFunc func(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	UpdateStoreAndForwardFunc func(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	DeleteStoreAndForwardFunc func(ctx context.Context, name, signature string) error
+
+	// Identity Providers
+	GetIdentityProviderFunc    func(ctx context.Context, name string) (*ResourceResponse[IdentityProviderConfig], error)
+	CreateIdentityProviderFunc func(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	UpdateIdentityProviderFunc func(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	DeleteIdentityProviderFunc func(ctx context.Context, name, signature string) error
+
+	// Gateway Network Outgoing
+	GetGanOutgoingFunc    func(ctx context.Context, name string) (*ResourceResponse[GanOutgoingConfig], error)
+	CreateGanOutgoingFunc func(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	UpdateGanOutgoingFunc func(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	DeleteGanOutgoingFunc func(ctx context.Context, name, signature string) error
 }
 
 // Generic
@@ -317,6 +341,110 @@ func (m *MockClient) UpdateAlarmJournal(ctx context.Context, item ResourceRespon
 func (m *MockClient) DeleteAlarmJournal(ctx context.Context, name, signature string) error {
 	if m.DeleteAlarmJournalFunc != nil {
 		return m.DeleteAlarmJournalFunc(ctx, name, signature)
+	}
+	return nil
+}
+
+// SMTP Profiles
+func (m *MockClient) GetSMTPProfile(ctx context.Context, name string) (*ResourceResponse[SMTPProfileConfig], error) {
+	if m.GetSMTPProfileFunc != nil {
+		return m.GetSMTPProfileFunc(ctx, name)
+	}
+	return &ResourceResponse[SMTPProfileConfig]{}, nil
+}
+func (m *MockClient) CreateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
+	if m.CreateSMTPProfileFunc != nil {
+		return m.CreateSMTPProfileFunc(ctx, item)
+	}
+	return &ResourceResponse[SMTPProfileConfig]{}, nil
+}
+func (m *MockClient) UpdateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
+	if m.UpdateSMTPProfileFunc != nil {
+		return m.UpdateSMTPProfileFunc(ctx, item)
+	}
+	return &ResourceResponse[SMTPProfileConfig]{}, nil
+}
+func (m *MockClient) DeleteSMTPProfile(ctx context.Context, name, signature string) error {
+	if m.DeleteSMTPProfileFunc != nil {
+		return m.DeleteSMTPProfileFunc(ctx, name, signature)
+	}
+	return nil
+}
+
+// Store and Forward
+func (m *MockClient) GetStoreAndForward(ctx context.Context, name string) (*ResourceResponse[StoreAndForwardConfig], error) {
+	if m.GetStoreAndForwardFunc != nil {
+		return m.GetStoreAndForwardFunc(ctx, name)
+	}
+	return &ResourceResponse[StoreAndForwardConfig]{}, nil
+}
+func (m *MockClient) CreateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
+	if m.CreateStoreAndForwardFunc != nil {
+		return m.CreateStoreAndForwardFunc(ctx, item)
+	}
+	return &ResourceResponse[StoreAndForwardConfig]{}, nil
+}
+func (m *MockClient) UpdateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
+	if m.UpdateStoreAndForwardFunc != nil {
+		return m.UpdateStoreAndForwardFunc(ctx, item)
+	}
+	return &ResourceResponse[StoreAndForwardConfig]{}, nil
+}
+func (m *MockClient) DeleteStoreAndForward(ctx context.Context, name, signature string) error {
+	if m.DeleteStoreAndForwardFunc != nil {
+		return m.DeleteStoreAndForwardFunc(ctx, name, signature)
+	}
+	return nil
+}
+
+// Identity Providers
+func (m *MockClient) GetIdentityProvider(ctx context.Context, name string) (*ResourceResponse[IdentityProviderConfig], error) {
+	if m.GetIdentityProviderFunc != nil {
+		return m.GetIdentityProviderFunc(ctx, name)
+	}
+	return &ResourceResponse[IdentityProviderConfig]{}, nil
+}
+func (m *MockClient) CreateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
+	if m.CreateIdentityProviderFunc != nil {
+		return m.CreateIdentityProviderFunc(ctx, item)
+	}
+	return &ResourceResponse[IdentityProviderConfig]{}, nil
+}
+func (m *MockClient) UpdateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
+	if m.UpdateIdentityProviderFunc != nil {
+		return m.UpdateIdentityProviderFunc(ctx, item)
+	}
+	return &ResourceResponse[IdentityProviderConfig]{}, nil
+}
+func (m *MockClient) DeleteIdentityProvider(ctx context.Context, name, signature string) error {
+	if m.DeleteIdentityProviderFunc != nil {
+		return m.DeleteIdentityProviderFunc(ctx, name, signature)
+	}
+	return nil
+}
+
+// Gateway Network Outgoing
+func (m *MockClient) GetGanOutgoing(ctx context.Context, name string) (*ResourceResponse[GanOutgoingConfig], error) {
+	if m.GetGanOutgoingFunc != nil {
+		return m.GetGanOutgoingFunc(ctx, name)
+	}
+	return &ResourceResponse[GanOutgoingConfig]{}, nil
+}
+func (m *MockClient) CreateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
+	if m.CreateGanOutgoingFunc != nil {
+		return m.CreateGanOutgoingFunc(ctx, item)
+	}
+	return &ResourceResponse[GanOutgoingConfig]{}, nil
+}
+func (m *MockClient) UpdateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
+	if m.UpdateGanOutgoingFunc != nil {
+		return m.UpdateGanOutgoingFunc(ctx, item)
+	}
+	return &ResourceResponse[GanOutgoingConfig]{}, nil
+}
+func (m *MockClient) DeleteGanOutgoing(ctx context.Context, name, signature string) error {
+	if m.DeleteGanOutgoingFunc != nil {
+		return m.DeleteGanOutgoingFunc(ctx, name, signature)
 	}
 	return nil
 }
