@@ -153,7 +153,7 @@ func (r *UserSourceResource) Create(ctx context.Context, req resource.CreateRequ
 	if created.Config.Profile.Type != "" {
 		data.Type = types.StringValue(created.Config.Profile.Type)
 	}
-	data.Description = types.StringValue(created.Description)
+	data.Description = stringToNullableString(created.Description)
 
 	if created.Config.Profile.FailoverProfile != "" {
 		data.FailoverProfile = types.StringValue(created.Config.Profile.FailoverProfile)
@@ -184,7 +184,7 @@ func (r *UserSourceResource) Read(ctx context.Context, req resource.ReadRequest,
 	if res.Config.Profile.Type != "" {
 		data.Type = types.StringValue(res.Config.Profile.Type)
 	}
-	data.Description = types.StringValue(res.Description)
+	data.Description = stringToNullableString(res.Description)
 
 	if res.Config.Profile.FailoverProfile != "" {
 		data.FailoverProfile = types.StringValue(res.Config.Profile.FailoverProfile)
@@ -249,7 +249,7 @@ func (r *UserSourceResource) Update(ctx context.Context, req resource.UpdateRequ
 	if updated.Config.Profile.Type != "" {
 		data.Type = types.StringValue(updated.Config.Profile.Type)
 	}
-	data.Description = types.StringValue(updated.Description)
+	data.Description = stringToNullableString(updated.Description)
 
 	if updated.Config.Profile.FailoverProfile != "" {
 		data.FailoverProfile = types.StringValue(updated.Config.Profile.FailoverProfile)

@@ -28,15 +28,13 @@ func NewStoreAndForwardResource() resource.Resource {
 
 // StoreAndForwardResource defines the resource implementation.
 type StoreAndForwardResource struct {
-	client client.IgnitionClient
+	client  client.IgnitionClient
+	generic GenericIgnitionResource[client.StoreAndForwardConfig, StoreAndForwardResourceModel]
 }
 
 // StoreAndForwardResourceModel describes the resource data model.
 type StoreAndForwardResourceModel struct {
-	Id                 types.String            `tfsdk:"id"`
-	Name               types.String            `tfsdk:"name"`
-	Description        types.String            `tfsdk:"description"`
-	Enabled            types.Bool              `tfsdk:"enabled"`
+	BaseResourceModel
 	TimeThresholdMs    types.Int64             `tfsdk:"time_threshold_ms"`
 	ForwardRateMs      types.Int64             `tfsdk:"forward_rate_ms"`
 	ForwardingPolicy   types.String            `tfsdk:"forwarding_policy"`
@@ -47,7 +45,6 @@ type StoreAndForwardResourceModel struct {
 	ScanRateMs         types.Int64             `tfsdk:"scan_rate_ms"`
 	PrimaryPolicy      *MaintenancePolicyModel `tfsdk:"primary_policy"`
 	SecondaryPolicy    *MaintenancePolicyModel `tfsdk:"secondary_policy"`
-	Signature          types.String            `tfsdk:"signature"`
 }
 
 type MaintenancePolicyModel struct {
@@ -179,7 +176,7 @@ func (r *StoreAndForwardResource) Configure(ctx context.Context, req resource.Co
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -188,180 +185,104 @@ func (r *StoreAndForwardResource) Configure(ctx context.Context, req resource.Co
 		return
 	}
 
-	r.client = client
+	r.client = c
+	r.generic = GenericIgnitionResource[client.StoreAndForwardConfig, StoreAndForwardResourceModel]{
+		Client:     c,
+		Handler:    r,
+		CreateFunc: c.CreateStoreAndForward,
+		GetFunc:    c.GetStoreAndForward,
+		UpdateFunc: c.UpdateStoreAndForward,
+		DeleteFunc: c.DeleteStoreAndForward,
+	}
+}
+
+func (r *StoreAndForwardResource) MapPlanToClient(ctx context.Context, model *StoreAndForwardResourceModel) (client.StoreAndForwardConfig, error) {
+	config := client.StoreAndForwardConfig{
+		TimeThresholdMs:    int(model.TimeThresholdMs.ValueInt64()),
+		ForwardRateMs:      int(model.ForwardRateMs.ValueInt64()),
+		ForwardingPolicy:   model.ForwardingPolicy.ValueString(),
+		ForwardingSchedule: model.ForwardingSchedule.ValueString(),
+		IsThirdParty:       model.IsThirdParty.ValueBool(),
+		DataThreshold:      int(model.DataThreshold.ValueInt64()),
+		BatchSize:          int(model.BatchSize.ValueInt64()),
+		ScanRateMs:         int(model.ScanRateMs.ValueInt64()),
+	}
+
+	if model.PrimaryPolicy != nil {
+		config.PrimaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
+			Action: model.PrimaryPolicy.Action.ValueString(),
+		}
+		config.PrimaryMaintenancePolicy.Limit.LimitType = model.PrimaryPolicy.LimitType.ValueString()
+		config.PrimaryMaintenancePolicy.Limit.Value = int(model.PrimaryPolicy.Value.ValueInt64())
+	}
+
+	if model.SecondaryPolicy != nil {
+		config.SecondaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
+			Action: model.SecondaryPolicy.Action.ValueString(),
+		}
+		config.SecondaryMaintenancePolicy.Limit.LimitType = model.SecondaryPolicy.LimitType.ValueString()
+		config.SecondaryMaintenancePolicy.Limit.Value = int(model.SecondaryPolicy.Value.ValueInt64())
+	}
+
+	return config, nil
+}
+
+func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, config *client.StoreAndForwardConfig, model *StoreAndForwardResourceModel) error {
+	model.TimeThresholdMs = types.Int64Value(int64(config.TimeThresholdMs))
+	model.ForwardRateMs = types.Int64Value(int64(config.ForwardRateMs))
+	model.ForwardingPolicy = types.StringValue(config.ForwardingPolicy)
+	model.ForwardingSchedule = stringToNullableString(config.ForwardingSchedule)
+	model.IsThirdParty = types.BoolValue(config.IsThirdParty)
+	model.DataThreshold = types.Int64Value(int64(config.DataThreshold))
+	model.BatchSize = types.Int64Value(int64(config.BatchSize))
+	model.ScanRateMs = types.Int64Value(int64(config.ScanRateMs))
+
+	if config.PrimaryMaintenancePolicy != nil {
+		model.PrimaryPolicy = &MaintenancePolicyModel{
+			Action:    types.StringValue(config.PrimaryMaintenancePolicy.Action),
+			LimitType: types.StringValue(config.PrimaryMaintenancePolicy.Limit.LimitType),
+			Value:     types.Int64Value(int64(config.PrimaryMaintenancePolicy.Limit.Value)),
+		}
+	} else {
+		model.PrimaryPolicy = nil
+	}
+
+	if config.SecondaryMaintenancePolicy != nil {
+		model.SecondaryPolicy = &MaintenancePolicyModel{
+			Action:    types.StringValue(config.SecondaryMaintenancePolicy.Action),
+			LimitType: types.StringValue(config.SecondaryMaintenancePolicy.Limit.LimitType),
+			Value:     types.Int64Value(int64(config.SecondaryMaintenancePolicy.Limit.Value)),
+		}
+	} else {
+		model.SecondaryPolicy = nil
+	}
+	return nil
 }
 
 func (r *StoreAndForwardResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data StoreAndForwardResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.StoreAndForwardConfig{
-		TimeThresholdMs:    int(data.TimeThresholdMs.ValueInt64()),
-		ForwardRateMs:      int(data.ForwardRateMs.ValueInt64()),
-		ForwardingPolicy:   data.ForwardingPolicy.ValueString(),
-		ForwardingSchedule: data.ForwardingSchedule.ValueString(),
-		IsThirdParty:       data.IsThirdParty.ValueBool(),
-		DataThreshold:      int(data.DataThreshold.ValueInt64()),
-		BatchSize:          int(data.BatchSize.ValueInt64()),
-		ScanRateMs:         int(data.ScanRateMs.ValueInt64()),
-	}
-
-	if data.PrimaryPolicy != nil {
-		config.PrimaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
-			Action: data.PrimaryPolicy.Action.ValueString(),
-		}
-		config.PrimaryMaintenancePolicy.Limit.LimitType = data.PrimaryPolicy.LimitType.ValueString()
-		config.PrimaryMaintenancePolicy.Limit.Value = int(data.PrimaryPolicy.Value.ValueInt64())
-	}
-
-	if data.SecondaryPolicy != nil {
-		config.SecondaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
-			Action: data.SecondaryPolicy.Action.ValueString(),
-		}
-		config.SecondaryMaintenancePolicy.Limit.LimitType = data.SecondaryPolicy.LimitType.ValueString()
-		config.SecondaryMaintenancePolicy.Limit.Value = int(data.SecondaryPolicy.Value.ValueInt64())
-	}
-
-	res := client.ResourceResponse[client.StoreAndForwardConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: data.Enabled.ValueBool(),
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateStoreAndForward(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating Store and Forward engine", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *StoreAndForwardResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data StoreAndForwardResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetStoreAndForward(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading Store and Forward engine", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
-	data.Description = types.StringValue(res.Description)
-	
-	data.TimeThresholdMs = types.Int64Value(int64(res.Config.TimeThresholdMs))
-	data.ForwardRateMs = types.Int64Value(int64(res.Config.ForwardRateMs))
-	data.ForwardingPolicy = types.StringValue(res.Config.ForwardingPolicy)
-	data.ForwardingSchedule = types.StringValue(res.Config.ForwardingSchedule)
-	data.IsThirdParty = types.BoolValue(res.Config.IsThirdParty)
-	data.DataThreshold = types.Int64Value(int64(res.Config.DataThreshold))
-	data.BatchSize = types.Int64Value(int64(res.Config.BatchSize))
-	data.ScanRateMs = types.Int64Value(int64(res.Config.ScanRateMs))
-
-	if res.Config.PrimaryMaintenancePolicy != nil {
-		data.PrimaryPolicy = &MaintenancePolicyModel{
-			Action:    types.StringValue(res.Config.PrimaryMaintenancePolicy.Action),
-			LimitType: types.StringValue(res.Config.PrimaryMaintenancePolicy.Limit.LimitType),
-			Value:     types.Int64Value(int64(res.Config.PrimaryMaintenancePolicy.Limit.Value)),
-		}
-	}
-
-	if res.Config.SecondaryMaintenancePolicy != nil {
-		data.SecondaryPolicy = &MaintenancePolicyModel{
-			Action:    types.StringValue(res.Config.SecondaryMaintenancePolicy.Action),
-			LimitType: types.StringValue(res.Config.SecondaryMaintenancePolicy.Limit.LimitType),
-			Value:     types.Int64Value(int64(res.Config.SecondaryMaintenancePolicy.Limit.Value)),
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *StoreAndForwardResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data StoreAndForwardResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.StoreAndForwardConfig{
-		TimeThresholdMs:    int(data.TimeThresholdMs.ValueInt64()),
-		ForwardRateMs:      int(data.ForwardRateMs.ValueInt64()),
-		ForwardingPolicy:   data.ForwardingPolicy.ValueString(),
-		ForwardingSchedule: data.ForwardingSchedule.ValueString(),
-		IsThirdParty:       data.IsThirdParty.ValueBool(),
-		DataThreshold:      int(data.DataThreshold.ValueInt64()),
-		BatchSize:          int(data.BatchSize.ValueInt64()),
-		ScanRateMs:         int(data.ScanRateMs.ValueInt64()),
-	}
-
-	if data.PrimaryPolicy != nil {
-		config.PrimaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
-			Action: data.PrimaryPolicy.Action.ValueString(),
-		}
-		config.PrimaryMaintenancePolicy.Limit.LimitType = data.PrimaryPolicy.LimitType.ValueString()
-		config.PrimaryMaintenancePolicy.Limit.Value = int(data.PrimaryPolicy.Value.ValueInt64())
-	}
-
-	if data.SecondaryPolicy != nil {
-		config.SecondaryMaintenancePolicy = &client.StoreAndForwardMaintenancePolicy{
-			Action: data.SecondaryPolicy.Action.ValueString(),
-		}
-		config.SecondaryMaintenancePolicy.Limit.LimitType = data.SecondaryPolicy.LimitType.ValueString()
-		config.SecondaryMaintenancePolicy.Limit.Value = int(data.SecondaryPolicy.Value.ValueInt64())
-	}
-
-	res := client.ResourceResponse[client.StoreAndForwardConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   data.Enabled.ValueBool(),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateStoreAndForward(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating Store and Forward engine", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *StoreAndForwardResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data StoreAndForwardResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteStoreAndForward(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting Store and Forward engine", err.Error())
-		return
-	}
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *StoreAndForwardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+
 	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+
 }
+
+

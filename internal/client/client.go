@@ -262,6 +262,45 @@ type IdentityProviderInternalConfig struct {
 	RememberMeExp            float64                      `json:"rememberMeExp"`
 }
 
+// IgnitionSecret represents a secret in Ignition (embedded or referenced)
+type IgnitionSecret struct {
+	Type string `json:"type"` // "Embedded" or "Referenced"
+	Data any    `json:"data"`
+}
+
+// IdentityProviderOidcConfig represents the "oidc" IdP type
+type IdentityProviderOidcConfig struct {
+	ClientId                   string          `json:"clientId"`
+	ClientSecret               *IgnitionSecret `json:"clientSecret,omitempty"`
+	ProviderId                 string          `json:"providerId"`
+	AuthorizationEndpoint      string          `json:"authorizationEndpoint"`
+	TokenEndpoint              string          `json:"tokenEndpoint"`
+	JsonWebKeysEndpoint        string          `json:"jsonWebKeysEndpoint"`
+	JsonWebKeysEndpointEnabled bool            `json:"jsonWebKeysEndpointEnabled"`
+	UserInfoEndpoint           string          `json:"userInfoEndpoint,omitempty"`
+	EndSessionEndpoint         string          `json:"endSessionEndpoint,omitempty"`
+}
+
+// IdentityProviderSamlConfig represents the "saml" IdP type
+type IdentityProviderSamlConfig struct {
+	IdpEntityId                    string `json:"idpEntityId"`
+	SpEntityId                     string `json:"spEntityId,omitempty"`
+	SpEntityIdEnabled              bool   `json:"spEntityIdEnabled"`
+	AcsBinding                     string `json:"acsBinding"`
+	NameIdFormat                   string `json:"nameIdFormat"`
+	SsoServiceConfig               struct {
+		Uri     string `json:"uri"`
+		Binding string `json:"binding"`
+	} `json:"ssoServiceConfig"`
+	ForceAuthnEnabled              bool     `json:"forceAuthnEnabled"`
+	ResponseSignaturesRequired     bool     `json:"responseSignaturesRequired"`
+	AssertionSignaturesRequired    bool     `json:"assertionSignaturesRequired"`
+	IdpMetadataUrl                 string   `json:"idpMetadataUrl,omitempty"`
+	IdpMetadataUrlEnabled          bool     `json:"idpMetadataUrlEnabled"`
+	SignatureVerifyingCertificates []string `json:"signatureVerifyingCertificates"`
+	SignatureVerifyingKeys         []any    `json:"signatureVerifyingKeys"`
+}
+
 // IdentityProviderConfig represents the main config object for an IdP
 type IdentityProviderConfig struct {
 	Type   string `json:"type"` // "internal", "oidc", "saml"
@@ -281,6 +320,40 @@ type GanOutgoingConfig struct {
 	HttpReadTimeoutMillis    float64 `json:"httpReadTimeoutMillis,omitempty"`
 	SendThreads              float64 `json:"sendThreads,omitempty"`
 	ReceiveThreads           float64 `json:"receiveThreads,omitempty"`
+}
+
+// RedundancyConfig represents the configuration for gateway redundancy
+type RedundancyConfig struct {
+	Role                string `json:"role"` // "Independent", "Backup", "Master"
+	ActiveHistoryLevel  string `json:"activeHistoryLevel"`
+	JoinWaitTime        int    `json:"joinWaitTime"`
+	RecoveryMode        string `json:"recoveryMode"`
+	AllowHistoryCleanup bool   `json:"allowHistoryCleanup"`
+	GatewayNetworkSetup *struct {
+		Host               string  `json:"host,omitempty"`
+		Port               int     `json:"port,omitempty"`
+		EnableSsl          bool    `json:"enableSsl,omitempty"`
+		PingRate           float64 `json:"pingRate,omitempty"`
+		PingTimeout        float64 `json:"pingTimeout,omitempty"`
+		PingMaxMissed      float64 `json:"pingMaxMissed,omitempty"`
+		WebsocketTimeout   float64 `json:"websocketTimeout,omitempty"`
+		HttpConnectTimeout float64 `json:"httpConnectTimeout,omitempty"`
+		HttpReadTimeout    float64 `json:"httpReadTimeout,omitempty"`
+		SendThreads        float64 `json:"sendThreads,omitempty"`
+		ReceiveThreads     float64 `json:"receiveThreads,omitempty"`
+	} `json:"gatewayNetworkSetup,omitempty"`
+}
+
+// GanGeneralSettingsConfig represents general Gateway Network settings
+type GanGeneralSettingsConfig struct {
+	RequireSSL                  bool    `json:"requireSSL"`
+	RequireTwoWayAuth           bool    `json:"requireTwoWayAuth"`
+	AllowIncoming               bool    `json:"allowIncoming"`
+	SecurityPolicy              string  `json:"securityPolicy"`
+	Whitelist                   string  `json:"whitelist,omitempty"`
+	AllowedProxyHops            float64 `json:"allowedProxyHops"`
+	WebsocketSessionIdleTimeout float64 `json:"websocketSessionIdleTimeout"`
+	TempFilesMaxAgeHours        float64 `json:"tempFilesMaxAgeHours"`
 }
 
 // NewClient creates a new Ignition API client
@@ -923,4 +996,52 @@ func (c *Client) UpdateGanOutgoing(ctx context.Context, item ResourceResponse[Ga
 
 func (c *Client) DeleteGanOutgoing(ctx context.Context, name, signature string) error {
 	return c.DeleteResource(ctx, "gateway-network-outgoing", name, signature)
+}
+
+// Redundancy
+
+func (c *Client) GetRedundancyConfig(ctx context.Context) (*RedundancyConfig, error) {
+	path := "/data/api/v1/redundancy/config"
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var config RedundancyConfig
+	if err := json.Unmarshal(body, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func (c *Client) UpdateRedundancyConfig(ctx context.Context, config RedundancyConfig) error {
+	path := "/data/api/v1/redundancy/config"
+	rb, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(ctx, http.MethodPost, path, rb)
+	return err
+}
+
+// GAN General Settings
+
+func (c *Client) GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error) {
+	var resp ResourceResponse[GanGeneralSettingsConfig]
+	// General settings usually don't have a name in the URL for list/get of singletons
+	err := c.GetResource(ctx, "gateway-network-settings", "", &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateGanGeneralSettings(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error) {
+	var resp ResourceResponse[GanGeneralSettingsConfig]
+	err := c.UpdateResource(ctx, "gateway-network-settings", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

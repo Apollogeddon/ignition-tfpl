@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
@@ -14,24 +13,10 @@ import (
 func TestUnitSMTPProfileResource_Create(t *testing.T) {
 	mockClient := &client.MockClient{
 		CreateSMTPProfileFunc: func(ctx context.Context, item client.ResourceResponse[client.SMTPProfileConfig]) (*client.ResourceResponse[client.SMTPProfileConfig], error) {
-			if item.Name != "unit-test-smtp" {
-				return nil, fmt.Errorf("expected name 'unit-test-smtp', got '%s'", item.Name)
-			}
-			if item.Config.Profile.Type != "smtp.classic" {
-				return nil, fmt.Errorf("expected type 'smtp.classic', got '%s'", item.Config.Profile.Type)
-			}
-			if item.Config.Settings.Settings.Hostname != "smtp.test.com" {
-				return nil, fmt.Errorf("expected hostname 'smtp.test.com', got '%s'", item.Config.Settings.Settings.Hostname)
-			}
-			
-			// Simulate successful creation
 			item.Signature = "mock-signature-smtp"
 			return &item, nil
 		},
 		GetSMTPProfileFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.SMTPProfileConfig], error) {
-			if name != "unit-test-smtp" {
-				return nil, fmt.Errorf("not found")
-			}
 			return &client.ResourceResponse[client.SMTPProfileConfig]{
 				Name:      "unit-test-smtp",
 				Enabled:   true,

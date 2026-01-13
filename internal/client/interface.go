@@ -86,4 +86,12 @@ type IgnitionClient interface {
 	CreateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
 	UpdateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
 	DeleteGanOutgoing(ctx context.Context, name, signature string) error
+
+	// Redundancy
+	GetRedundancyConfig(ctx context.Context) (*RedundancyConfig, error)
+	UpdateRedundancyConfig(ctx context.Context, config RedundancyConfig) error
+
+	// GAN General Settings
+	GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error)
+	UpdateGanGeneralSettings(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error)
 }

@@ -85,6 +85,14 @@ type MockClient struct {
 	CreateGanOutgoingFunc func(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
 	UpdateGanOutgoingFunc func(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
 	DeleteGanOutgoingFunc func(ctx context.Context, name, signature string) error
+
+	// Redundancy
+	GetRedundancyConfigFunc    func(ctx context.Context) (*RedundancyConfig, error)
+	UpdateRedundancyConfigFunc func(ctx context.Context, config RedundancyConfig) error
+
+	// GAN General Settings
+	GetGanGeneralSettingsFunc    func(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error)
+	UpdateGanGeneralSettingsFunc func(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error)
 }
 
 // Generic
@@ -447,4 +455,32 @@ func (m *MockClient) DeleteGanOutgoing(ctx context.Context, name, signature stri
 		return m.DeleteGanOutgoingFunc(ctx, name, signature)
 	}
 	return nil
+}
+
+// Redundancy
+func (m *MockClient) GetRedundancyConfig(ctx context.Context) (*RedundancyConfig, error) {
+	if m.GetRedundancyConfigFunc != nil {
+		return m.GetRedundancyConfigFunc(ctx)
+	}
+	return &RedundancyConfig{}, nil
+}
+func (m *MockClient) UpdateRedundancyConfig(ctx context.Context, config RedundancyConfig) error {
+	if m.UpdateRedundancyConfigFunc != nil {
+		return m.UpdateRedundancyConfigFunc(ctx, config)
+	}
+	return nil
+}
+
+// GAN General Settings
+func (m *MockClient) GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error) {
+	if m.GetGanGeneralSettingsFunc != nil {
+		return m.GetGanGeneralSettingsFunc(ctx)
+	}
+	return &ResourceResponse[GanGeneralSettingsConfig]{}, nil
+}
+func (m *MockClient) UpdateGanGeneralSettings(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error) {
+	if m.UpdateGanGeneralSettingsFunc != nil {
+		return m.UpdateGanGeneralSettingsFunc(ctx, item)
+	}
+	return &ResourceResponse[GanGeneralSettingsConfig]{}, nil
 }

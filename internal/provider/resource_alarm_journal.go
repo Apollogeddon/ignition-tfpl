@@ -26,22 +26,19 @@ func NewAlarmJournalResource() resource.Resource {
 
 // AlarmJournalResource defines the resource implementation.
 type AlarmJournalResource struct {
-	client client.IgnitionClient
+	client  client.IgnitionClient
+	generic GenericIgnitionResource[client.AlarmJournalConfig, AlarmJournalResourceModel]
 }
 
 // AlarmJournalResourceModel describes the resource data model.
 type AlarmJournalResourceModel struct {
-	Id            types.String `tfsdk:"id"`
-	Name          types.String `tfsdk:"name"`
-	Description   types.String `tfsdk:"description"`
-	Enabled       types.Bool   `tfsdk:"enabled"`
+	BaseResourceModel
 	Type          types.String `tfsdk:"type"`
 	Datasource    types.String `tfsdk:"datasource"`
 	TableName     types.String `tfsdk:"table_name"`
 	MinPriority   types.String `tfsdk:"min_priority"`
 	TargetServer  types.String `tfsdk:"target_server"`
 	TargetJournal types.String `tfsdk:"target_journal"`
-	Signature     types.String `tfsdk:"signature"`
 }
 
 func (r *AlarmJournalResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -120,7 +117,7 @@ func (r *AlarmJournalResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -129,271 +126,110 @@ func (r *AlarmJournalResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	r.client = client
+	r.client = c
+	r.generic = GenericIgnitionResource[client.AlarmJournalConfig, AlarmJournalResourceModel]{
+		Client:     c,
+		Handler:    r,
+		CreateFunc: c.CreateAlarmJournal,
+		GetFunc:    c.GetAlarmJournal,
+		UpdateFunc: c.UpdateAlarmJournal,
+		DeleteFunc: c.DeleteAlarmJournal,
+	}
+}
+
+func (r *AlarmJournalResource) MapPlanToClient(ctx context.Context, model *AlarmJournalResourceModel) (client.AlarmJournalConfig, error) {
+	settings := client.AlarmJournalSettings{}
+	
+	if model.Type.ValueString() == "DATASOURCE" {
+		if !model.Datasource.IsNull() {
+			settings.Datasource = model.Datasource.ValueString()
+		}
+		
+		settings.Advanced = &struct {
+			TableName          string `json:"tableName,omitempty"`
+			DataTableName      string `json:"dataTableName,omitempty"`
+			UseStoreAndForward bool   `json:"useStoreAndForward,omitempty"`
+		}{}
+		
+		if !model.TableName.IsNull() {
+			settings.Advanced.TableName = model.TableName.ValueString()
+		}
+		
+		settings.Events = &struct {
+			MinPriority            string `json:"minPriority,omitempty"`
+			StoreShelvedEvents     bool   `json:"storeShelvedEvents,omitempty"`
+			StoreFromEnabledChange bool   `json:"storeFromEnabledChange,omitempty"`
+		}{}
+		
+		if !model.MinPriority.IsNull() {
+			settings.Events.MinPriority = model.MinPriority.ValueString()
+		}
+	} else if model.Type.ValueString() == "REMOTE" {
+		settings.RemoteGateway = &struct {
+			TargetServer  string `json:"targetServer,omitempty"`
+			TargetJournal string `json:"targetJournal,omitempty"`
+		}{}
+		if !model.TargetServer.IsNull() {
+			settings.RemoteGateway.TargetServer = model.TargetServer.ValueString()
+		}
+		if !model.TargetJournal.IsNull() {
+			settings.RemoteGateway.TargetJournal = model.TargetJournal.ValueString()
+		}
+	}
+
+	return client.AlarmJournalConfig{
+		Profile: client.AlarmJournalProfile{
+			Type: model.Type.ValueString(),
+		},
+		Settings: settings,
+	}, nil
+}
+
+func (r *AlarmJournalResource) MapClientToState(ctx context.Context, config *client.AlarmJournalConfig, model *AlarmJournalResourceModel) error {
+	model.Type = types.StringValue(config.Profile.Type)
+	
+	// Reset specific fields
+	model.Datasource = types.StringNull()
+	model.TableName = types.StringNull()
+	model.MinPriority = types.StringNull()
+	model.TargetServer = types.StringNull()
+	model.TargetJournal = types.StringNull()
+
+	if config.Profile.Type == "DATASOURCE" {
+		model.Datasource = types.StringValue(config.Settings.Datasource)
+		if config.Settings.Advanced != nil {
+			model.TableName = types.StringValue(config.Settings.Advanced.TableName)
+		}
+		if config.Settings.Events != nil {
+			model.MinPriority = types.StringValue(config.Settings.Events.MinPriority)
+		}
+	} else if config.Profile.Type == "REMOTE" {
+		if config.Settings.RemoteGateway != nil {
+			model.TargetServer = types.StringValue(config.Settings.RemoteGateway.TargetServer)
+			model.TargetJournal = types.StringValue(config.Settings.RemoteGateway.TargetJournal)
+		}
+	}
+	return nil
 }
 
 func (r *AlarmJournalResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data AlarmJournalResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Build the settings
-	settings := client.AlarmJournalSettings{}
-	
-	if data.Type.ValueString() == "DATASOURCE" {
-		if !data.Datasource.IsNull() {
-			settings.Datasource = data.Datasource.ValueString()
-		}
-		
-		settings.Advanced = &struct {
-			TableName          string `json:"tableName,omitempty"`
-			DataTableName      string `json:"dataTableName,omitempty"`
-			UseStoreAndForward bool   `json:"useStoreAndForward,omitempty"`
-		}{}
-		
-		if !data.TableName.IsNull() {
-			settings.Advanced.TableName = data.TableName.ValueString()
-		}
-		
-		settings.Events = &struct {
-			MinPriority            string `json:"minPriority,omitempty"`
-			StoreShelvedEvents     bool   `json:"storeShelvedEvents,omitempty"`
-			StoreFromEnabledChange bool   `json:"storeFromEnabledChange,omitempty"`
-		}{}
-		
-		if !data.MinPriority.IsNull() {
-			settings.Events.MinPriority = data.MinPriority.ValueString()
-		}
-	} else if data.Type.ValueString() == "REMOTE" {
-		settings.RemoteGateway = &struct {
-			TargetServer  string `json:"targetServer,omitempty"`
-			TargetJournal string `json:"targetJournal,omitempty"`
-		}{}
-		if !data.TargetServer.IsNull() {
-			settings.RemoteGateway.TargetServer = data.TargetServer.ValueString()
-		}
-		if !data.TargetJournal.IsNull() {
-			settings.RemoteGateway.TargetJournal = data.TargetJournal.ValueString()
-		}
-	}
-
-	config := client.AlarmJournalConfig{
-		Profile: client.AlarmJournalProfile{
-			Type: data.Type.ValueString(),
-		},
-		Settings: settings,
-	}
-
-	res := client.ResourceResponse[client.AlarmJournalConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: data.Enabled.ValueBool(),
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateAlarmJournal(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating alarm journal", err.Error())
-		return
-	}
-
-	// Map response back to model
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	data.Name = types.StringValue(created.Name)
-	data.Enabled = types.BoolValue(created.Enabled)
-	
-	if created.Description != "" {
-		data.Description = types.StringValue(created.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-	
-	data.Type = types.StringValue(created.Config.Profile.Type)
-	
-	// Map settings back
-	if created.Config.Profile.Type == "DATASOURCE" {
-		data.Datasource = types.StringValue(created.Config.Settings.Datasource)
-		if created.Config.Settings.Advanced != nil {
-			data.TableName = types.StringValue(created.Config.Settings.Advanced.TableName)
-		}
-		if created.Config.Settings.Events != nil {
-			data.MinPriority = types.StringValue(created.Config.Settings.Events.MinPriority)
-		}
-	} else if created.Config.Profile.Type == "REMOTE" {
-		if created.Config.Settings.RemoteGateway != nil {
-			data.TargetServer = types.StringValue(created.Config.Settings.RemoteGateway.TargetServer)
-			data.TargetJournal = types.StringValue(created.Config.Settings.RemoteGateway.TargetJournal)
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmJournalResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data AlarmJournalResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetAlarmJournal(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading alarm journal", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Name = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
-	
-	if res.Description != "" {
-		data.Description = types.StringValue(res.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-	
-	data.Type = types.StringValue(res.Config.Profile.Type)
-	
-	// Reset specific fields
-	data.Datasource = types.StringNull()
-	data.TableName = types.StringNull()
-	data.MinPriority = types.StringNull()
-	data.TargetServer = types.StringNull()
-	data.TargetJournal = types.StringNull()
-
-	if res.Config.Profile.Type == "DATASOURCE" {
-		data.Datasource = types.StringValue(res.Config.Settings.Datasource)
-		if res.Config.Settings.Advanced != nil {
-			data.TableName = types.StringValue(res.Config.Settings.Advanced.TableName)
-		}
-		if res.Config.Settings.Events != nil {
-			data.MinPriority = types.StringValue(res.Config.Settings.Events.MinPriority)
-		}
-	} else if res.Config.Profile.Type == "REMOTE" {
-		if res.Config.Settings.RemoteGateway != nil {
-			data.TargetServer = types.StringValue(res.Config.Settings.RemoteGateway.TargetServer)
-			data.TargetJournal = types.StringValue(res.Config.Settings.RemoteGateway.TargetJournal)
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmJournalResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data AlarmJournalResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Build the settings
-	settings := client.AlarmJournalSettings{}
-	
-	if data.Type.ValueString() == "DATASOURCE" {
-		if !data.Datasource.IsNull() {
-			settings.Datasource = data.Datasource.ValueString()
-		}
-		
-		settings.Advanced = &struct {
-			TableName          string `json:"tableName,omitempty"`
-			DataTableName      string `json:"dataTableName,omitempty"`
-			UseStoreAndForward bool   `json:"useStoreAndForward,omitempty"`
-		}{}
-		
-		if !data.TableName.IsNull() {
-			settings.Advanced.TableName = data.TableName.ValueString()
-		}
-		
-		settings.Events = &struct {
-			MinPriority            string `json:"minPriority,omitempty"`
-			StoreShelvedEvents     bool   `json:"storeShelvedEvents,omitempty"`
-			StoreFromEnabledChange bool   `json:"storeFromEnabledChange,omitempty"`
-		}{}
-		
-		if !data.MinPriority.IsNull() {
-			settings.Events.MinPriority = data.MinPriority.ValueString()
-		}
-	} else if data.Type.ValueString() == "REMOTE" {
-		settings.RemoteGateway = &struct {
-			TargetServer  string `json:"targetServer,omitempty"`
-			TargetJournal string `json:"targetJournal,omitempty"`
-		}{}
-		if !data.TargetServer.IsNull() {
-			settings.RemoteGateway.TargetServer = data.TargetServer.ValueString()
-		}
-		if !data.TargetJournal.IsNull() {
-			settings.RemoteGateway.TargetJournal = data.TargetJournal.ValueString()
-		}
-	}
-
-	config := client.AlarmJournalConfig{
-		Profile: client.AlarmJournalProfile{
-			Type: data.Type.ValueString(),
-		},
-		Settings: settings,
-	}
-
-	res := client.ResourceResponse[client.AlarmJournalConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   data.Enabled.ValueBool(),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateAlarmJournal(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating alarm journal", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	data.Type = types.StringValue(updated.Config.Profile.Type)
-	
-	if updated.Description != "" {
-		data.Description = types.StringValue(updated.Description)
-	}
-
-	if updated.Config.Profile.Type == "DATASOURCE" {
-		data.Datasource = types.StringValue(updated.Config.Settings.Datasource)
-		if updated.Config.Settings.Advanced != nil {
-			data.TableName = types.StringValue(updated.Config.Settings.Advanced.TableName)
-		}
-		if updated.Config.Settings.Events != nil {
-			data.MinPriority = types.StringValue(updated.Config.Settings.Events.MinPriority)
-		}
-	} else if updated.Config.Profile.Type == "REMOTE" {
-		if updated.Config.Settings.RemoteGateway != nil {
-			data.TargetServer = types.StringValue(updated.Config.Settings.RemoteGateway.TargetServer)
-			data.TargetJournal = types.StringValue(updated.Config.Settings.RemoteGateway.TargetJournal)
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmJournalResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data AlarmJournalResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteAlarmJournal(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting alarm journal", err.Error())
-		return
-	}
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmJournalResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

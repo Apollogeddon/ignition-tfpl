@@ -28,6 +28,7 @@ type TagProviderResource struct {
 
 // TagProviderResourceModel describes the resource data model.
 type TagProviderResourceModel struct {
+	Id          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Type        types.String `tfsdk:"type"`
 	Description types.String `tfsdk:"description"`
@@ -42,6 +43,12 @@ func (r *TagProviderResource) Schema(ctx context.Context, req resource.SchemaReq
 	resp.Schema = schema.Schema{
 		Description: "Manages a Tag Provider in Ignition.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{
 				Description: "The name of the tag provider.",
 				Required:    true,
@@ -89,13 +96,18 @@ func (r *TagProviderResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	config := client.TagProviderConfig{
+		Type: data.Type.ValueString(),
+	}
+
+	if !data.Description.IsNull() {
+		config.Description = data.Description.ValueString()
+	}
+
 	res := client.ResourceResponse[client.TagProviderConfig]{
 		Name:    data.Name.ValueString(),
 		Enabled: true,
-		Config: client.TagProviderConfig{
-			Type:        data.Type.ValueString(),
-			Description: data.Description.ValueString(),
-		},
+		Config:  config,
 	}
 
 	created, err := r.client.CreateTagProvider(ctx, res)
@@ -105,8 +117,10 @@ func (r *TagProviderResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	data.Signature = types.StringValue(created.Signature)
+	data.Id = types.StringValue(created.Name)
+	data.Name = types.StringValue(created.Name)
 	data.Type = types.StringValue(created.Config.Type)
-	data.Description = types.StringValue(created.Config.Description)
+	data.Description = stringToNullableString(created.Config.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -125,8 +139,10 @@ func (r *TagProviderResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	data.Signature = types.StringValue(res.Signature)
+	data.Id = types.StringValue(res.Name)
+	data.Name = types.StringValue(res.Name)
 	data.Type = types.StringValue(res.Config.Type)
-	data.Description = types.StringValue(res.Config.Description)
+	data.Description = stringToNullableString(res.Config.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -138,14 +154,18 @@ func (r *TagProviderResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	config := client.TagProviderConfig{
+		Type: data.Type.ValueString(),
+	}
+
+	if !data.Description.IsNull() {
+		config.Description = data.Description.ValueString()
+	}
+
 	res := client.ResourceResponse[client.TagProviderConfig]{
 		Name:      data.Name.ValueString(),
-		Enabled:   true,
 		Signature: data.Signature.ValueString(),
-		Config: client.TagProviderConfig{
-			Type:        data.Type.ValueString(),
-			Description: data.Description.ValueString(),
-		},
+		Config:    config,
 	}
 
 	updated, err := r.client.UpdateTagProvider(ctx, res)
@@ -155,8 +175,7 @@ func (r *TagProviderResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	data.Signature = types.StringValue(updated.Signature)
-	data.Type = types.StringValue(updated.Config.Type)
-	data.Description = types.StringValue(updated.Config.Description)
+	data.Description = stringToNullableString(updated.Config.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
