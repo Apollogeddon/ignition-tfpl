@@ -26,15 +26,13 @@ func NewGanOutgoingResource() resource.Resource {
 
 // GanOutgoingResource defines the resource implementation.
 type GanOutgoingResource struct {
-	client client.IgnitionClient
+	client  client.IgnitionClient
+	generic GenericIgnitionResource[client.GanOutgoingConfig, GanOutgoingResourceModel]
 }
 
 // GanOutgoingResourceModel describes the resource data model.
 type GanOutgoingResourceModel struct {
-	Id                       types.String  `tfsdk:"id"`
-	Name                     types.String  `tfsdk:"name"`
-	Description              types.String  `tfsdk:"description"`
-	Enabled                  types.Bool    `tfsdk:"enabled"`
+	BaseResourceModel
 	Host                     types.String  `tfsdk:"host"`
 	Port                     types.Int64   `tfsdk:"port"`
 	UseSSL                   types.Bool    `tfsdk:"use_ssl"`
@@ -46,7 +44,6 @@ type GanOutgoingResourceModel struct {
 	HttpReadTimeoutMillis    types.Float64 `tfsdk:"http_read_timeout_millis"`
 	SendThreads              types.Float64 `tfsdk:"send_threads"`
 	ReceiveThreads           types.Float64 `tfsdk:"receive_threads"`
-	Signature                types.String  `tfsdk:"signature"`
 }
 
 func (r *GanOutgoingResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -149,7 +146,7 @@ func (r *GanOutgoingResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -158,139 +155,66 @@ func (r *GanOutgoingResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	r.client = client
+	r.client = c
+	r.generic = GenericIgnitionResource[client.GanOutgoingConfig, GanOutgoingResourceModel]{
+		Client:     c,
+		Handler:    r,
+		CreateFunc: c.CreateGanOutgoing,
+		GetFunc:    c.GetGanOutgoing,
+		UpdateFunc: c.UpdateGanOutgoing,
+		DeleteFunc: c.DeleteGanOutgoing,
+	}
+}
+
+func (r *GanOutgoingResource) MapPlanToClient(ctx context.Context, model *GanOutgoingResourceModel) (client.GanOutgoingConfig, error) {
+	return client.GanOutgoingConfig{
+		Host:                     model.Host.ValueString(),
+		Port:                     int(model.Port.ValueInt64()),
+		UseSSL:                   model.UseSSL.ValueBool(),
+		PingRateMillis:           model.PingRateMillis.ValueFloat64(),
+		PingTimeoutMillis:        model.PingTimeoutMillis.ValueFloat64(),
+		PingMaxMissed:            model.PingMaxMissed.ValueFloat64(),
+		WsTimeoutMillis:          model.WsTimeoutMillis.ValueFloat64(),
+		HttpConnectTimeoutMillis: model.HttpConnectTimeoutMillis.ValueFloat64(),
+		HttpReadTimeoutMillis:    model.HttpReadTimeoutMillis.ValueFloat64(),
+		SendThreads:              model.SendThreads.ValueFloat64(),
+		ReceiveThreads:           model.ReceiveThreads.ValueFloat64(),
+	}, nil
+}
+
+func (r *GanOutgoingResource) MapClientToState(ctx context.Context, config *client.GanOutgoingConfig, model *GanOutgoingResourceModel) error {
+	model.Host = types.StringValue(config.Host)
+	model.Port = types.Int64Value(int64(config.Port))
+	model.UseSSL = types.BoolValue(config.UseSSL)
+	model.PingRateMillis = types.Float64Value(config.PingRateMillis)
+	model.PingTimeoutMillis = types.Float64Value(config.PingTimeoutMillis)
+	model.PingMaxMissed = types.Float64Value(config.PingMaxMissed)
+	model.WsTimeoutMillis = types.Float64Value(config.WsTimeoutMillis)
+	model.HttpConnectTimeoutMillis = types.Float64Value(config.HttpConnectTimeoutMillis)
+	model.HttpReadTimeoutMillis = types.Float64Value(config.HttpReadTimeoutMillis)
+	model.SendThreads = types.Float64Value(config.SendThreads)
+	model.ReceiveThreads = types.Float64Value(config.ReceiveThreads)
+	return nil
 }
 
 func (r *GanOutgoingResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data GanOutgoingResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.GanOutgoingConfig{
-		Host:                     data.Host.ValueString(),
-		Port:                     int(data.Port.ValueInt64()),
-		UseSSL:                   data.UseSSL.ValueBool(),
-		PingRateMillis:           data.PingRateMillis.ValueFloat64(),
-		PingTimeoutMillis:        data.PingTimeoutMillis.ValueFloat64(),
-		PingMaxMissed:            data.PingMaxMissed.ValueFloat64(),
-		WsTimeoutMillis:          data.WsTimeoutMillis.ValueFloat64(),
-		HttpConnectTimeoutMillis: data.HttpConnectTimeoutMillis.ValueFloat64(),
-		HttpReadTimeoutMillis:    data.HttpReadTimeoutMillis.ValueFloat64(),
-		SendThreads:              data.SendThreads.ValueFloat64(),
-		ReceiveThreads:           data.ReceiveThreads.ValueFloat64(),
-	}
-
-	res := client.ResourceResponse[client.GanOutgoingConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: data.Enabled.ValueBool(),
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateGanOutgoing(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating GAN connection", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *GanOutgoingResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data GanOutgoingResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetGanOutgoing(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading GAN connection", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
-	data.Description = types.StringValue(res.Description)
-	
-	data.Host = types.StringValue(res.Config.Host)
-	data.Port = types.Int64Value(int64(res.Config.Port))
-	data.UseSSL = types.BoolValue(res.Config.UseSSL)
-	data.PingRateMillis = types.Float64Value(res.Config.PingRateMillis)
-	data.PingTimeoutMillis = types.Float64Value(res.Config.PingTimeoutMillis)
-	data.PingMaxMissed = types.Float64Value(res.Config.PingMaxMissed)
-	data.WsTimeoutMillis = types.Float64Value(res.Config.WsTimeoutMillis)
-	data.HttpConnectTimeoutMillis = types.Float64Value(res.Config.HttpConnectTimeoutMillis)
-	data.HttpReadTimeoutMillis = types.Float64Value(res.Config.HttpReadTimeoutMillis)
-	data.SendThreads = types.Float64Value(res.Config.SendThreads)
-	data.ReceiveThreads = types.Float64Value(res.Config.ReceiveThreads)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *GanOutgoingResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data GanOutgoingResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.GanOutgoingConfig{
-		Host:                     data.Host.ValueString(),
-		Port:                     int(data.Port.ValueInt64()),
-		UseSSL:                   data.UseSSL.ValueBool(),
-		PingRateMillis:           data.PingRateMillis.ValueFloat64(),
-		PingTimeoutMillis:        data.PingTimeoutMillis.ValueFloat64(),
-		PingMaxMissed:            data.PingMaxMissed.ValueFloat64(),
-		WsTimeoutMillis:          data.WsTimeoutMillis.ValueFloat64(),
-		HttpConnectTimeoutMillis: data.HttpConnectTimeoutMillis.ValueFloat64(),
-		HttpReadTimeoutMillis:    data.HttpReadTimeoutMillis.ValueFloat64(),
-		SendThreads:              data.SendThreads.ValueFloat64(),
-		ReceiveThreads:           data.ReceiveThreads.ValueFloat64(),
-	}
-
-	res := client.ResourceResponse[client.GanOutgoingConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   data.Enabled.ValueBool(),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateGanOutgoing(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating GAN connection", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *GanOutgoingResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data GanOutgoingResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteGanOutgoing(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting GAN connection", err.Error())
-		return
-	}
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *GanOutgoingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
