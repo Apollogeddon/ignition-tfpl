@@ -166,28 +166,16 @@ func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	data.Description = types.StringValue(created.Description)
+	data.Description = stringToNullableString(created.Description)
 	data.Id = types.StringValue(data.Name.ValueString())
-	if created.Title != "" {
-		data.Title = types.StringValue(created.Title)
-	}
+	data.Title = stringToNullableString(created.Title)
 	data.Enabled = types.BoolValue(created.Enabled)
-	if created.Parent != "" {
-		data.Parent = types.StringValue(created.Parent)
-	}
+	data.Parent = stringToNullableString(created.Parent)
 	data.Inheritable = types.BoolValue(created.Inheritable)
-	if created.DefaultDB != "" {
-		data.DefaultDB = types.StringValue(created.DefaultDB)
-	}
-	if created.TagProvider != "" {
-		data.TagProvider = types.StringValue(created.TagProvider)
-	}
-	if created.UserSource != "" {
-		data.UserSource = types.StringValue(created.UserSource)
-	}
-	if created.IdentityProvider != "" {
-		data.IdentityProvider = types.StringValue(created.IdentityProvider)
-	}
+	data.DefaultDB = stringToNullableString(created.DefaultDB)
+	data.TagProvider = stringToNullableString(created.TagProvider)
+	data.UserSource = stringToNullableString(created.UserSource)
+	data.IdentityProvider = stringToNullableString(created.IdentityProvider)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -205,28 +193,16 @@ func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	data.Description = types.StringValue(res.Description)
+	data.Description = stringToNullableString(res.Description)
 	data.Id = types.StringValue(data.Name.ValueString())
-	if res.Title != "" {
-		data.Title = types.StringValue(res.Title)
-	}
+	data.Title = stringToNullableString(res.Title)
 	data.Enabled = types.BoolValue(res.Enabled)
-	if res.Parent != "" {
-		data.Parent = types.StringValue(res.Parent)
-	}
+	data.Parent = stringToNullableString(res.Parent)
 	data.Inheritable = types.BoolValue(res.Inheritable)
-	if res.DefaultDB != "" {
-		data.DefaultDB = types.StringValue(res.DefaultDB)
-	}
-	if res.TagProvider != "" {
-		data.TagProvider = types.StringValue(res.TagProvider)
-	}
-	if res.UserSource != "" {
-		data.UserSource = types.StringValue(res.UserSource)
-	}
-	if res.IdentityProvider != "" {
-		data.IdentityProvider = types.StringValue(res.IdentityProvider)
-	}
+	data.DefaultDB = stringToNullableString(res.DefaultDB)
+	data.TagProvider = stringToNullableString(res.TagProvider)
+	data.UserSource = stringToNullableString(res.UserSource)
+	data.IdentityProvider = stringToNullableString(res.IdentityProvider)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
@@ -276,27 +252,15 @@ func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	data.Description = types.StringValue(updated.Description)
-	if updated.Title != "" {
-		data.Title = types.StringValue(updated.Title)
-	}
+	data.Description = stringToNullableString(updated.Description)
+	data.Title = stringToNullableString(updated.Title)
 	data.Enabled = types.BoolValue(updated.Enabled)
-	if updated.Parent != "" {
-		data.Parent = types.StringValue(updated.Parent)
-	}
+	data.Parent = stringToNullableString(updated.Parent)
 	data.Inheritable = types.BoolValue(updated.Inheritable)
-	if updated.DefaultDB != "" {
-		data.DefaultDB = types.StringValue(updated.DefaultDB)
-	}
-	if updated.TagProvider != "" {
-		data.TagProvider = types.StringValue(updated.TagProvider)
-	}
-	if updated.UserSource != "" {
-		data.UserSource = types.StringValue(updated.UserSource)
-	}
-	if updated.IdentityProvider != "" {
-		data.IdentityProvider = types.StringValue(updated.IdentityProvider)
-	}
+	data.DefaultDB = stringToNullableString(updated.DefaultDB)
+	data.TagProvider = stringToNullableString(updated.TagProvider)
+	data.UserSource = stringToNullableString(updated.UserSource)
+	data.IdentityProvider = stringToNullableString(updated.IdentityProvider)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
