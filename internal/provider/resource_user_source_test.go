@@ -50,9 +50,10 @@ func testAccUserSourceResourceConfig(name, typeVal, desc string) string {
 provider "ignition" {}
 
 resource "ignition_user_source" "test" {
-  name        = %[1]q
-  type        = %[2]q
-  description = %[3]q
+  name          = %[1]q
+  type          = %[2]q
+  description   = %[3]q
+  failover_mode = "HARD"
 }
 `, name, typeVal, desc)
 }

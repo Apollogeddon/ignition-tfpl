@@ -71,10 +71,12 @@ func (r *UserSourceResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"failover_profile": schema.StringAttribute{
 				Description: "If this source is unreachable for authentication, this failover source will be used instead.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"failover_mode": schema.StringAttribute{
 				Description: "The failover mode to use if a failover source is set. Hard - failover only if this source is unreachable. Soft - try the failover source when a user fails to authenticate with this source.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"schedule_restricted": schema.BoolAttribute{
 				Description: "Users are only able to log in when their assigned schedule is active.",
@@ -148,18 +150,34 @@ func (r *UserSourceResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// Refresh from API to get server-side defaults
+	refreshed, err := r.client.GetUserSource(ctx, created.Name)
+	if err == nil {
+		created = refreshed
+	}
+
 	data.Signature = types.StringValue(created.Signature)
 	data.Id = types.StringValue(data.Name.ValueString())
 	if created.Config.Profile.Type != "" {
 		data.Type = types.StringValue(created.Config.Profile.Type)
 	}
-	data.Description = stringToNullableString(created.Description)
+	if created.Description != "" {
+		data.Description = types.StringValue(created.Description)
+	} else if !data.Description.IsNull() && !data.Description.IsUnknown() {
+		data.Description = data.Description
+	} else {
+		data.Description = types.StringNull()
+	}
 
 	if created.Config.Profile.FailoverProfile != "" {
 		data.FailoverProfile = types.StringValue(created.Config.Profile.FailoverProfile)
+	} else {
+		data.FailoverProfile = types.StringNull()
 	}
 	if created.Config.Profile.FailoverMode != "" {
 		data.FailoverMode = types.StringValue(created.Config.Profile.FailoverMode)
+	} else {
+		data.FailoverMode = types.StringNull()
 	}
 	data.ScheduleRestricted = types.BoolValue(created.Config.Profile.ScheduleRestricted)
 

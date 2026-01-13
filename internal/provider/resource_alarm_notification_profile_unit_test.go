@@ -35,12 +35,10 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 				Signature: "mock-signature-123",
 				Config: client.AlarmNotificationProfileConfig{
 					Profile: client.AlarmNotificationProfileProfile{Type: "EmailNotificationProfileType"},
-					Settings: client.AlarmNotificationProfileSettings{
-						Settings: &client.AlarmNotificationProfileEmailSettings{
-							UseSMTPProfile: false,
-							Hostname:       "mock.smtp.com",
-							Port:           25,
-						},
+					Settings: map[string]any{
+						"useSmtpProfile": false,
+						"hostname":       "mock.smtp.com",
+						"port":           25,
 					},
 				},
 			}, nil

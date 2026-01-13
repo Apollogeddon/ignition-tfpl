@@ -115,26 +115,10 @@ type AlarmNotificationProfileProfile struct {
 	Type string `json:"type"`
 }
 
-// AlarmNotificationProfileEmailSettings represents settings for an Email profile
-type AlarmNotificationProfileEmailSettings struct {
-	UseSMTPProfile bool   `json:"useSmtpProfile"`
-	EmailProfile   string `json:"emailProfile,omitempty"`
-	Hostname       string `json:"hostname,omitempty"`
-	Port           int    `json:"port,omitempty"`
-	SSLEnabled     bool   `json:"sslEnabled,omitempty"`
-	Username       string `json:"username,omitempty"`
-	Password       any    `json:"password,omitempty"` // null, string, or object
-}
-
-// AlarmNotificationProfileSettings represents the union of settings types
-type AlarmNotificationProfileSettings struct {
-	Settings *AlarmNotificationProfileEmailSettings `json:"settings,omitempty"`
-}
-
 // AlarmNotificationProfileConfig represents the main config object
 type AlarmNotificationProfileConfig struct {
-	Profile  AlarmNotificationProfileProfile  `json:"profile"`
-	Settings AlarmNotificationProfileSettings `json:"settings"`
+	Profile  AlarmNotificationProfileProfile `json:"profile"`
+	Settings map[string]any                  `json:"settings"`
 }
 
 // OpcUaConnectionEndpoint represents the endpoint configuration

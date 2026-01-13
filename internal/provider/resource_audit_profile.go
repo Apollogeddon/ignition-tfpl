@@ -69,6 +69,7 @@ func (r *AuditProfileResource) Schema(ctx context.Context, req resource.SchemaRe
 			"description": schema.StringAttribute{
 				Description: "The description of the audit profile.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"type": schema.StringAttribute{
 				Description: "The type of the audit profile (database, remote, edge, local).",
@@ -112,6 +113,7 @@ func (r *AuditProfileResource) Schema(ctx context.Context, req resource.SchemaRe
 			"enable_store_and_forward": schema.BoolAttribute{
 				Description: "If enabled, audit events will be stored through the store and forward system (for 'remote' type).",
 				Optional:    true,
+				Computed:    true,
 			},
 			"signature": schema.StringAttribute{
 				Description: "The signature of the resource, used for updates and deletes.",
@@ -202,7 +204,9 @@ func (r *AuditProfileResource) Create(ctx context.Context, req resource.CreateRe
 	if created.Config.Profile.Type != "" {
 		data.Type = types.StringValue(created.Config.Profile.Type)
 	}
-	data.RetentionDays = types.Int64Value(int64(created.Config.Profile.RetentionDays))
+	if !data.RetentionDays.IsNull() {
+		profile.RetentionDays = int(data.RetentionDays.ValueInt64())
+	}
 	data.Description = types.StringValue(created.Description)
 
 	if created.Config.Settings.DatabaseName != "" {
@@ -212,8 +216,8 @@ func (r *AuditProfileResource) Create(ctx context.Context, req resource.CreateRe
 	data.AutoCreate = types.BoolValue(created.Config.Settings.AutoCreate)
 	if created.Config.Settings.TableName != "" {
 		data.TableName = types.StringValue(created.Config.Settings.TableName)
-	} else if !data.TableName.IsNull() {
-		// Keep the plan value if API returns empty but we sent something (or default)
+	} else if !data.TableName.IsNull() && !data.TableName.IsUnknown() {
+		// Keep the plan value if API returns empty but we sent something known
 		data.TableName = data.TableName
 	} else {
 		// Default fallback if not set in plan and not returned
