@@ -23,7 +23,7 @@ func TestClient_GetResource(t *testing.T) {
 
 		response := ResourceResponse[map[string]any]{
 			Name:    "test-name",
-			Enabled: true,
+			Enabled: boolPtr(true),
 			Config:  map[string]any{"key": "value"},
 		}
 		json.NewEncoder(w).Encode(response)
@@ -65,7 +65,7 @@ func TestClient_CreateResource(t *testing.T) {
 		response := []ResourceResponse[map[string]any]{
 			{
 				Name:      "test-name",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "sig-123",
 				Config:    map[string]any{"key": "value"},
 			},
@@ -83,7 +83,7 @@ func TestClient_CreateResource(t *testing.T) {
 	// Test
 	item := ResourceResponse[map[string]any]{
 		Name:    "test-name",
-		Enabled: true,
+		Enabled: boolPtr(true),
 		Config:  map[string]any{"key": "value"},
 	}
 	var dest ResourceResponse[map[string]any]
@@ -132,3 +132,8 @@ func TestClient_APIError(t *testing.T) {
 		t.Errorf("Expected error '%s', got '%s'", expectedMsg, err.Error())
 	}
 }
+
+func boolPtr(b bool) *bool {
+	return &b
+}
+
