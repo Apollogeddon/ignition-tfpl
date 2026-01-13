@@ -1,0 +1,18 @@
+services:
+  ignition:
+    image: inductiveautomation/ignition:8.3
+    container_name: ignition-test-instance
+    ports:
+      - "8088:8088"
+    environment:
+      - ACCEPT_IGNITION_EULA=Y
+      - GATEWAY_ADMIN_PASSWORD=admin
+      - GATEWAY_ADMIN_USERNAME=admin
+      # Helper for easier local dev/test loops - disables the commissioning prompt
+      - IGNITION_EDITION=standard
+    volumes:
+      # Persist data so you don't lose your API token between restarts
+      - ignition_data:/usr/local/bin/ignition/data
+
+volumes:
+  ignition_data:
