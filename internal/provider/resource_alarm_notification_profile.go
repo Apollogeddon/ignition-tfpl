@@ -6,7 +6,6 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -26,7 +25,7 @@ func NewAlarmNotificationProfileResource() resource.Resource {
 
 // AlarmNotificationProfileResource defines the resource implementation.
 type AlarmNotificationProfileResource struct {
-	client client.IgnitionClient
+	GenericIgnitionResource[client.AlarmNotificationProfileConfig, AlarmNotificationProfileResourceModel]
 }
 
 // AlarmNotificationProfileResourceModel describes the resource data model.
@@ -143,7 +142,7 @@ func (r *AlarmNotificationProfileResource) Configure(ctx context.Context, req re
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	apiClient, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -152,290 +151,139 @@ func (r *AlarmNotificationProfileResource) Configure(ctx context.Context, req re
 		return
 	}
 
-	r.client = client
+	r.Client = apiClient
+	r.Handler = r
+	r.CreateFunc = apiClient.CreateAlarmNotificationProfile
+	r.GetFunc = apiClient.GetAlarmNotificationProfile
+	r.UpdateFunc = apiClient.UpdateAlarmNotificationProfile
+	r.DeleteFunc = apiClient.DeleteAlarmNotificationProfile
+	
+	r.PopulateBase = func(m *AlarmNotificationProfileResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
+	}
+	r.PopulateModel = func(b *BaseResourceModel, m *AlarmNotificationProfileResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
+	}
+}
+
+func (r *AlarmNotificationProfileResource) MapPlanToClient(ctx context.Context, model *AlarmNotificationProfileResourceModel) (client.AlarmNotificationProfileConfig, error) {
+	config := client.AlarmNotificationProfileConfig{
+		Profile: client.AlarmNotificationProfileProfile{
+			Type: model.Type.ValueString(),
+		},
+		Settings: make(map[string]any),
+	}
+
+	if model.Type.ValueString() == "EmailNotificationProfileType" && model.EmailConfig != nil {
+		emailSettings := make(map[string]any)
+		emailSettings["useSmtpProfile"] = model.EmailConfig.UseSMTPProfile.ValueBool()
+		
+		if !model.EmailConfig.EmailProfile.IsNull() {
+			emailSettings["emailProfile"] = model.EmailConfig.EmailProfile.ValueString()
+		}
+		if !model.EmailConfig.Hostname.IsNull() {
+			emailSettings["hostname"] = model.EmailConfig.Hostname.ValueString()
+		}
+		if !model.EmailConfig.Port.IsNull() {
+			emailSettings["port"] = int(model.EmailConfig.Port.ValueInt64())
+		}
+		if !model.EmailConfig.SSLEnabled.IsNull() {
+			emailSettings["sslEnabled"] = model.EmailConfig.SSLEnabled.ValueBool()
+		}
+		if !model.EmailConfig.Username.IsNull() {
+			emailSettings["username"] = model.EmailConfig.Username.ValueString()
+		}
+		if !model.EmailConfig.Password.IsNull() {
+			emailSettings["password"] = model.EmailConfig.Password.ValueString()
+		}
+		config.Settings = emailSettings
+	}
+
+	return config, nil
+}
+
+func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context, config *client.AlarmNotificationProfileConfig, model *AlarmNotificationProfileResourceModel) error {
+	if config.Profile.Type == "EmailNotificationProfileType" && config.Settings != nil {
+		model.Type = types.StringValue(config.Profile.Type)
+		settings := config.Settings
+		
+		if model.EmailConfig == nil {
+			model.EmailConfig = &AlarmNotificationProfileEmailModel{}
+		}
+		
+		if v, ok := settings["useSmtpProfile"].(bool); ok {
+			model.EmailConfig.UseSMTPProfile = types.BoolValue(v)
+		}
+		
+		if v, ok := settings["emailProfile"].(string); ok && v != "" {
+			model.EmailConfig.EmailProfile = types.StringValue(v)
+		} else if model.EmailConfig.EmailProfile.IsNull() || model.EmailConfig.EmailProfile.IsUnknown() {
+			model.EmailConfig.EmailProfile = types.StringNull()
+		}
+		
+		if v, ok := settings["hostname"].(string); ok && v != "" {
+			model.EmailConfig.Hostname = types.StringValue(v)
+		} else if model.EmailConfig.Hostname.IsNull() || model.EmailConfig.Hostname.IsUnknown() {
+			model.EmailConfig.Hostname = types.StringNull()
+		}
+		
+		if v, ok := settings["port"].(float64); ok && v != 0 {
+			model.EmailConfig.Port = types.Int64Value(int64(v))
+		} else if v, ok := settings["port"].(int); ok && v != 0 {
+			model.EmailConfig.Port = types.Int64Value(int64(v))
+		} else if model.EmailConfig.Port.IsNull() || model.EmailConfig.Port.IsUnknown() {
+			model.EmailConfig.Port = types.Int64Null()
+		}
+		
+		if v, ok := settings["sslEnabled"].(bool); ok {
+			model.EmailConfig.SSLEnabled = types.BoolValue(v)
+		} else if model.EmailConfig.SSLEnabled.IsNull() || model.EmailConfig.SSLEnabled.IsUnknown() {
+			model.EmailConfig.SSLEnabled = types.BoolValue(false)
+		}
+		
+		if v, ok := settings["username"].(string); ok && v != "" {
+			model.EmailConfig.Username = types.StringValue(v)
+		} else if model.EmailConfig.Username.IsNull() || model.EmailConfig.Username.IsUnknown() {
+			model.EmailConfig.Username = types.StringNull()
+		}
+	}
+	return nil
 }
 
 func (r *AlarmNotificationProfileResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data AlarmNotificationProfileResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Construct the client configuration
-	config := client.AlarmNotificationProfileConfig{
-		Profile: client.AlarmNotificationProfileProfile{
-			Type: data.Type.ValueString(),
-		},
-		Settings: make(map[string]any),
-	}
-
-	if data.Type.ValueString() == "EmailNotificationProfileType" && data.EmailConfig != nil {
-		emailSettings := make(map[string]any)
-		emailSettings["useSmtpProfile"] = data.EmailConfig.UseSMTPProfile.ValueBool()
-		
-		if !data.EmailConfig.EmailProfile.IsNull() {
-			emailSettings["emailProfile"] = data.EmailConfig.EmailProfile.ValueString()
-		}
-		if !data.EmailConfig.Hostname.IsNull() {
-			emailSettings["hostname"] = data.EmailConfig.Hostname.ValueString()
-		}
-		if !data.EmailConfig.Port.IsNull() {
-			emailSettings["port"] = int(data.EmailConfig.Port.ValueInt64())
-		}
-		if !data.EmailConfig.SSLEnabled.IsNull() {
-			emailSettings["sslEnabled"] = data.EmailConfig.SSLEnabled.ValueBool()
-		}
-		if !data.EmailConfig.Username.IsNull() {
-			emailSettings["username"] = data.EmailConfig.Username.ValueString()
-		}
-		if !data.EmailConfig.Password.IsNull() {
-			emailSettings["password"] = data.EmailConfig.Password.ValueString()
-		}
-		config.Settings = emailSettings
-	}
-
-	res := client.ResourceResponse[client.AlarmNotificationProfileConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: data.Enabled.ValueBool(),
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateAlarmNotificationProfile(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating alarm notification profile", err.Error())
-		return
-	}
-
-	// Refresh from API to get server-side defaults
-	refreshed, err := r.client.GetAlarmNotificationProfile(ctx, created.Name)
-	if err == nil {
-		created = refreshed
-	}
-
-	// Map response back to model
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	data.Name = types.StringValue(created.Name)
-	data.Enabled = types.BoolValue(created.Enabled)
-	
-	if created.Description != "" {
-		data.Description = types.StringValue(created.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-	
-	// Only map back settings if it was an Email type
-	if created.Config.Profile.Type == "EmailNotificationProfileType" && data.EmailConfig != nil {
-		settings := created.Config.Settings
-		if settings == nil {
-			settings = make(map[string]any)
-		}
-		
-		if data.EmailConfig == nil {
-			data.EmailConfig = &AlarmNotificationProfileEmailModel{}
-		}
-		
-		if v, ok := settings["useSmtpProfile"].(bool); ok {
-			data.EmailConfig.UseSMTPProfile = types.BoolValue(v)
-		}
-		
-		if v, ok := settings["emailProfile"].(string); ok && v != "" {
-			data.EmailConfig.EmailProfile = types.StringValue(v)
-		} else {
-			data.EmailConfig.EmailProfile = types.StringNull()
-		}
-		
-		if v, ok := settings["hostname"].(string); ok && v != "" {
-			data.EmailConfig.Hostname = types.StringValue(v)
-		} else {
-			data.EmailConfig.Hostname = types.StringNull()
-		}
-		
-		// Handle port being float64 (from JSON unmarshal) or int
-		if v, ok := settings["port"].(float64); ok && v != 0 {
-			data.EmailConfig.Port = types.Int64Value(int64(v))
-		} else if v, ok := settings["port"].(int); ok && v != 0 {
-			data.EmailConfig.Port = types.Int64Value(int64(v))
-		} else {
-			data.EmailConfig.Port = types.Int64Null()
-		}
-		
-		if v, ok := settings["sslEnabled"].(bool); ok {
-			data.EmailConfig.SSLEnabled = types.BoolValue(v)
-		} else {
-			data.EmailConfig.SSLEnabled = types.BoolNull()
-		}
-		
-		if v, ok := settings["username"].(string); ok && v != "" {
-			data.EmailConfig.Username = types.StringValue(v)
-		} else {
-			data.EmailConfig.Username = types.StringNull()
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *AlarmNotificationProfileResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data AlarmNotificationProfileResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetAlarmNotificationProfile(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading alarm notification profile", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Name = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
-	
-	if res.Description != "" {
-		data.Description = types.StringValue(res.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-
-	if res.Config.Profile.Type == "EmailNotificationProfileType" && res.Config.Settings != nil {
-		data.Type = types.StringValue(res.Config.Profile.Type)
-		settings := res.Config.Settings
-		
-		if data.EmailConfig == nil {
-			data.EmailConfig = &AlarmNotificationProfileEmailModel{}
-		}
-		
-		if v, ok := settings["useSmtpProfile"].(bool); ok {
-			data.EmailConfig.UseSMTPProfile = types.BoolValue(v)
-		}
-		
-		if v, ok := settings["emailProfile"].(string); ok && v != "" {
-			data.EmailConfig.EmailProfile = types.StringValue(v)
-		} else {
-			data.EmailConfig.EmailProfile = types.StringNull()
-		}
-		
-		if v, ok := settings["hostname"].(string); ok && v != "" {
-			data.EmailConfig.Hostname = types.StringValue(v)
-		} else {
-			data.EmailConfig.Hostname = types.StringNull()
-		}
-		
-		if v, ok := settings["port"].(float64); ok && v != 0 {
-			data.EmailConfig.Port = types.Int64Value(int64(v))
-		} else if v, ok := settings["port"].(int); ok && v != 0 {
-			data.EmailConfig.Port = types.Int64Value(int64(v))
-		} else {
-			data.EmailConfig.Port = types.Int64Null()
-		}
-		
-		if v, ok := settings["sslEnabled"].(bool); ok {
-			data.EmailConfig.SSLEnabled = types.BoolValue(v)
-		}
-		
-		if v, ok := settings["username"].(string); ok && v != "" {
-			data.EmailConfig.Username = types.StringValue(v)
-		} else {
-			data.EmailConfig.Username = types.StringNull()
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *AlarmNotificationProfileResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data AlarmNotificationProfileResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.AlarmNotificationProfileConfig{
-		Profile: client.AlarmNotificationProfileProfile{
-			Type: data.Type.ValueString(),
-		},
-		Settings: make(map[string]any),
-	}
-
-	if data.Type.ValueString() == "EmailNotificationProfileType" && data.EmailConfig != nil {
-		emailSettings := make(map[string]any)
-		emailSettings["useSmtpProfile"] = data.EmailConfig.UseSMTPProfile.ValueBool()
-		
-		if !data.EmailConfig.EmailProfile.IsNull() {
-			emailSettings["emailProfile"] = data.EmailConfig.EmailProfile.ValueString()
-		}
-		if !data.EmailConfig.Hostname.IsNull() {
-			emailSettings["hostname"] = data.EmailConfig.Hostname.ValueString()
-		}
-		if !data.EmailConfig.Port.IsNull() {
-			emailSettings["port"] = int(data.EmailConfig.Port.ValueInt64())
-		}
-		if !data.EmailConfig.SSLEnabled.IsNull() {
-			emailSettings["sslEnabled"] = data.EmailConfig.SSLEnabled.ValueBool()
-		}
-		if !data.EmailConfig.Username.IsNull() {
-			emailSettings["username"] = data.EmailConfig.Username.ValueString()
-		}
-		if !data.EmailConfig.Password.IsNull() {
-			emailSettings["password"] = data.EmailConfig.Password.ValueString()
-		}
-		config.Settings = emailSettings
-	}
-
-	res := client.ResourceResponse[client.AlarmNotificationProfileConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   data.Enabled.ValueBool(),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-	
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateAlarmNotificationProfile(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating alarm notification profile", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	
-	// Re-sync state with response
-	if updated.Config.Profile.Type == "EmailNotificationProfileType" && updated.Config.Settings != nil {
-		settings := updated.Config.Settings
-		
-		if v, ok := settings["useSmtpProfile"].(bool); ok {
-			data.EmailConfig.UseSMTPProfile = types.BoolValue(v)
-		}
-		// We trust the rest from plan or check similarly
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *AlarmNotificationProfileResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data AlarmNotificationProfileResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteAlarmNotificationProfile(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting alarm notification profile", err.Error())
-		return
-	}
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *AlarmNotificationProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &AlarmNotificationProfileResourceModel{
+		Name: types.StringValue(req.ID),
+	})...)
 }

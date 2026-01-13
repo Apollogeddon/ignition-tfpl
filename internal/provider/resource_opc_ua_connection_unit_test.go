@@ -14,11 +14,11 @@ import (
 func TestUnitOpcUaConnectionResource_Create(t *testing.T) {
 	mockClient := &client.MockClient{
 		CreateOpcUaConnectionFunc: func(ctx context.Context, item client.ResourceResponse[client.OpcUaConnectionConfig]) (*client.ResourceResponse[client.OpcUaConnectionConfig], error) {
-			if item.Name != "test-opc" {
-				return nil, fmt.Errorf("expected name 'test-opc', got '%s'", item.Name)
+			if item.Name != "unit-test-opc" {
+				return nil, fmt.Errorf("expected name 'unit-test-opc', got '%s'", item.Name)
 			}
-			if item.Config.Settings.Endpoint.EndpointURL != "opc.tcp://localhost:53530" {
-				return nil, fmt.Errorf("unexpected endpoint URL")
+			if item.Config.Settings.Endpoint.EndpointURL != "opc.tcp://localhost:4840" {
+				return nil, fmt.Errorf("unexpected endpoint URL: %s", item.Config.Settings.Endpoint.EndpointURL)
 			}
 			
 			// Simulate successful creation
@@ -27,19 +27,19 @@ func TestUnitOpcUaConnectionResource_Create(t *testing.T) {
 			return &item, nil
 		},
 		GetOpcUaConnectionFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.OpcUaConnectionConfig], error) {
-			if name != "test-opc" {
+			if name != "unit-test-opc" {
 				return nil, fmt.Errorf("not found")
 			}
 			return &client.ResourceResponse[client.OpcUaConnectionConfig]{
-				Name:      "test-opc",
-				Enabled:   true,
+				Name:      "unit-test-opc",
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-opc",
 				Config: client.OpcUaConnectionConfig{
 					Profile: client.OpcUaConnectionProfile{Type: "com.inductiveautomation.OpcUaServerType"},
 					Settings: client.OpcUaConnectionSettings{
 						Endpoint: client.OpcUaConnectionEndpoint{
-							DiscoveryURL:   "opc.tcp://localhost:53530/discovery",
-							EndpointURL:    "opc.tcp://localhost:53530",
+							DiscoveryURL:   "opc.tcp://localhost:4840",
+							EndpointURL:    "opc.tcp://localhost:4840",
 							SecurityPolicy: "None",
 							SecurityMode:   "None",
 						},
@@ -69,15 +69,15 @@ func TestUnitOpcUaConnectionResource_Create(t *testing.T) {
 						token = "mock-token"
 					}
 					resource "ignition_opc_ua_connection" "unit" {
-						name            = "test-opc"
-						discovery_url   = "opc.tcp://localhost:53530/discovery"
-						endpoint_url    = "opc.tcp://localhost:53530"
+						name = "unit-test-opc"
+						discovery_url = "opc.tcp://localhost:4840"
+						endpoint_url  = "opc.tcp://localhost:4840"
 						security_policy = "None"
 						security_mode   = "None"
 					}
 				`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_opc_ua_connection.unit", "name", "test-opc"),
+					resource.TestCheckResourceAttr("ignition_opc_ua_connection.unit", "name", "unit-test-opc"),
 					resource.TestCheckResourceAttr("ignition_opc_ua_connection.unit", "signature", "mock-signature-opc"),
 				),
 			},

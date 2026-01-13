@@ -37,7 +37,7 @@ func TestUnitIdentityProviderResource_Create(t *testing.T) {
 			
 			return &client.ResourceResponse[client.IdentityProviderConfig]{
 				Name:      "unit-test-idp",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-idp",
 				Config: client.IdentityProviderConfig{
 					Type: "internal",
@@ -100,7 +100,7 @@ func TestUnitIdentityProviderResource_OIDC(t *testing.T) {
 			}
 			return &client.ResourceResponse[client.IdentityProviderConfig]{
 				Name:      name,
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-oidc",
 				Config: client.IdentityProviderConfig{
 					Type: "oidc",

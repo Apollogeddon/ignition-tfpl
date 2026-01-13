@@ -34,7 +34,7 @@ func TestUnitAlarmJournalResource_Create(t *testing.T) {
 			}
 			return &client.ResourceResponse[client.AlarmJournalConfig]{
 				Name:      "test-journal",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-journal",
 				Config: client.AlarmJournalConfig{
 					Profile: client.AlarmJournalProfile{Type: "DATASOURCE"},

@@ -6,9 +6,9 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -25,7 +25,7 @@ func NewAuditProfileResource() resource.Resource {
 
 // AuditProfileResource defines the resource implementation.
 type AuditProfileResource struct {
-	client client.IgnitionClient
+	GenericIgnitionResource[client.AuditProfileConfig, AuditProfileResourceModel]
 }
 
 // AuditProfileResourceModel describes the resource data model.
@@ -33,6 +33,7 @@ type AuditProfileResourceModel struct {
 	Id                    types.String `tfsdk:"id"`
 	Name                  types.String `tfsdk:"name"`
 	Description           types.String `tfsdk:"description"`
+	Enabled               types.Bool   `tfsdk:"enabled"`
 	Type                  types.String `tfsdk:"type"`
 	RetentionDays         types.Int64  `tfsdk:"retention_days"`
 	Database              types.String `tfsdk:"database"`
@@ -70,6 +71,12 @@ func (r *AuditProfileResource) Schema(ctx context.Context, req resource.SchemaRe
 				Description: "The description of the audit profile.",
 				Optional:    true,
 				Computed:    true,
+			},
+			"enabled": schema.BoolAttribute{
+				Description: "Whether the audit profile is enabled.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 			},
 			"type": schema.StringAttribute{
 				Description: "The type of the audit profile (database, remote, edge, local).",
@@ -128,7 +135,7 @@ func (r *AuditProfileResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	apiClient, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -137,263 +144,137 @@ func (r *AuditProfileResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	r.client = client
+	r.Client = apiClient
+	r.Handler = r
+	r.CreateFunc = apiClient.CreateAuditProfile
+	r.GetFunc = apiClient.GetAuditProfile
+	r.UpdateFunc = apiClient.UpdateAuditProfile
+	r.DeleteFunc = apiClient.DeleteAuditProfile
+	
+	r.PopulateBase = func(m *AuditProfileResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
+	}
+	r.PopulateModel = func(b *BaseResourceModel, m *AuditProfileResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
+	}
+}
+
+func (r *AuditProfileResource) MapPlanToClient(ctx context.Context, model *AuditProfileResourceModel) (client.AuditProfileConfig, error) {
+	profile := client.AuditProfileProfile{
+		Type: model.Type.ValueString(),
+	}
+	if !model.RetentionDays.IsNull() {
+		profile.RetentionDays = int(model.RetentionDays.ValueInt64())
+	}
+
+	settings := client.AuditProfileSettings{}
+	if !model.Database.IsNull() {
+		settings.DatabaseName = model.Database.ValueString()
+	}
+	if !model.PruneEnabled.IsNull() {
+		settings.PruneEnabled = model.PruneEnabled.ValueBool()
+	}
+	if !model.AutoCreate.IsNull() {
+		settings.AutoCreate = model.AutoCreate.ValueBool()
+	}
+	if !model.TableName.IsNull() {
+		settings.TableName = model.TableName.ValueString()
+	}
+	if !model.RemoteServer.IsNull() {
+		settings.RemoteServer = model.RemoteServer.ValueString()
+	}
+	if !model.RemoteProfile.IsNull() {
+		settings.RemoteProfile = model.RemoteProfile.ValueString()
+	}
+	if !model.EnableStoreAndForward.IsNull() {
+		settings.EnableStoreAndForward = model.EnableStoreAndForward.ValueBool()
+	}
+
+	return client.AuditProfileConfig{
+		Profile:  profile,
+		Settings: settings,
+	}, nil
+}
+
+func (r *AuditProfileResource) MapClientToState(ctx context.Context, config *client.AuditProfileConfig, model *AuditProfileResourceModel) error {
+	if config.Profile.Type != "" {
+		model.Type = types.StringValue(config.Profile.Type)
+	}
+	
+	if config.Profile.RetentionDays != 0 || model.RetentionDays.IsNull() || model.RetentionDays.IsUnknown() {
+		model.RetentionDays = types.Int64Value(int64(config.Profile.RetentionDays))
+	}
+	
+	if config.Settings.DatabaseName != "" {
+		model.Database = types.StringValue(config.Settings.DatabaseName)
+	} else if model.Database.IsNull() || model.Database.IsUnknown() {
+		model.Database = types.StringNull()
+	}
+
+	model.PruneEnabled = types.BoolValue(config.Settings.PruneEnabled)
+	model.AutoCreate = types.BoolValue(config.Settings.AutoCreate)
+	
+	if config.Settings.TableName != "" {
+		model.TableName = types.StringValue(config.Settings.TableName)
+	} else if model.TableName.IsNull() || model.TableName.IsUnknown() {
+		if model.Type.ValueString() == "database" {
+			model.TableName = types.StringValue("audit_events")
+		} else {
+			model.TableName = types.StringNull()
+		}
+	}
+
+	if config.Settings.RemoteServer != "" {
+		model.RemoteServer = types.StringValue(config.Settings.RemoteServer)
+	} else if model.RemoteServer.IsNull() || model.RemoteServer.IsUnknown() {
+		model.RemoteServer = types.StringNull()
+	}
+
+	if config.Settings.RemoteProfile != "" {
+		model.RemoteProfile = types.StringValue(config.Settings.RemoteProfile)
+	} else if model.RemoteProfile.IsNull() || model.RemoteProfile.IsUnknown() {
+		model.RemoteProfile = types.StringNull()
+	}
+
+	model.EnableStoreAndForward = types.BoolValue(config.Settings.EnableStoreAndForward)
+	
+	return nil
 }
 
 func (r *AuditProfileResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data AuditProfileResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	profile := client.AuditProfileProfile{
-		Type: data.Type.ValueString(),
-	}
-
-	if !data.RetentionDays.IsNull() {
-		profile.RetentionDays = int(data.RetentionDays.ValueInt64())
-	}
-
-	settings := client.AuditProfileSettings{}
-	if !data.Database.IsNull() {
-		settings.DatabaseName = data.Database.ValueString()
-	}
-	if !data.PruneEnabled.IsNull() {
-		settings.PruneEnabled = data.PruneEnabled.ValueBool()
-	}
-	if !data.AutoCreate.IsNull() {
-		settings.AutoCreate = data.AutoCreate.ValueBool()
-	}
-	if !data.TableName.IsNull() {
-		settings.TableName = data.TableName.ValueString()
-	}
-	if !data.RemoteServer.IsNull() {
-		settings.RemoteServer = data.RemoteServer.ValueString()
-	}
-	if !data.RemoteProfile.IsNull() {
-		settings.RemoteProfile = data.RemoteProfile.ValueString()
-	}
-	if !data.EnableStoreAndForward.IsNull() {
-		settings.EnableStoreAndForward = data.EnableStoreAndForward.ValueBool()
-	}
-
-	config := client.AuditProfileConfig{
-		Profile:  profile,
-		Settings: settings,
-	}
-
-	res := client.ResourceResponse[client.AuditProfileConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: true,
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateAuditProfile(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating audit profile", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(data.Name.ValueString())
-	if created.Config.Profile.Type != "" {
-		data.Type = types.StringValue(created.Config.Profile.Type)
-	}
-	if !data.RetentionDays.IsNull() {
-		profile.RetentionDays = int(data.RetentionDays.ValueInt64())
-	}
-	data.Description = types.StringValue(created.Description)
-
-	if created.Config.Settings.DatabaseName != "" {
-		data.Database = types.StringValue(created.Config.Settings.DatabaseName)
-	}
-	data.PruneEnabled = types.BoolValue(created.Config.Settings.PruneEnabled)
-	data.AutoCreate = types.BoolValue(created.Config.Settings.AutoCreate)
-	if created.Config.Settings.TableName != "" {
-		data.TableName = types.StringValue(created.Config.Settings.TableName)
-	} else if !data.TableName.IsNull() && !data.TableName.IsUnknown() {
-		// Keep the plan value if API returns empty but we sent something known
-		data.TableName = data.TableName
-	} else {
-		// Default fallback if not set in plan and not returned
-		data.TableName = types.StringValue("audit_events")
-	}
-
-	if created.Config.Settings.RemoteServer != "" {
-		data.RemoteServer = types.StringValue(created.Config.Settings.RemoteServer)
-	}
-	if created.Config.Settings.RemoteProfile != "" {
-		data.RemoteProfile = types.StringValue(created.Config.Settings.RemoteProfile)
-	}
-	data.EnableStoreAndForward = types.BoolValue(created.Config.Settings.EnableStoreAndForward)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *AuditProfileResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data AuditProfileResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetAuditProfile(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading audit profile", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(data.Name.ValueString())
-	if res.Config.Profile.Type != "" {
-		data.Type = types.StringValue(res.Config.Profile.Type)
-	}
-	data.RetentionDays = types.Int64Value(int64(res.Config.Profile.RetentionDays))
-	data.Description = types.StringValue(res.Description)
-
-	if res.Config.Settings.DatabaseName != "" {
-		data.Database = types.StringValue(res.Config.Settings.DatabaseName)
-	} else {
-		data.Database = types.StringNull()
-	}
-	data.PruneEnabled = types.BoolValue(res.Config.Settings.PruneEnabled)
-	data.AutoCreate = types.BoolValue(res.Config.Settings.AutoCreate)
-	if res.Config.Settings.TableName != "" {
-		data.TableName = types.StringValue(res.Config.Settings.TableName)
-	} else {
-		// If API doesn't return it, it might be the default or not applicable
-		// We shouldn't force it to null if it was set, but for Read we reflect state.
-		// If it's a database type, it likely has a default.
-		if data.Type.ValueString() == "database" {
-			data.TableName = types.StringValue("audit_events")
-		} else {
-			data.TableName = types.StringNull()
-		}
-	}
-	
-	if res.Config.Settings.RemoteServer != "" {
-		data.RemoteServer = types.StringValue(res.Config.Settings.RemoteServer)
-	} else {
-		data.RemoteServer = types.StringNull()
-	}
-	if res.Config.Settings.RemoteProfile != "" {
-		data.RemoteProfile = types.StringValue(res.Config.Settings.RemoteProfile)
-	} else {
-		data.RemoteProfile = types.StringNull()
-	}
-	data.EnableStoreAndForward = types.BoolValue(res.Config.Settings.EnableStoreAndForward)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *AuditProfileResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data AuditProfileResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	profile := client.AuditProfileProfile{
-		Type: data.Type.ValueString(),
-	}
-	if !data.RetentionDays.IsNull() {
-		profile.RetentionDays = int(data.RetentionDays.ValueInt64())
-	}
-
-	settings := client.AuditProfileSettings{}
-	if !data.Database.IsNull() {
-		settings.DatabaseName = data.Database.ValueString()
-	}
-	if !data.PruneEnabled.IsNull() {
-		settings.PruneEnabled = data.PruneEnabled.ValueBool()
-	}
-	if !data.AutoCreate.IsNull() {
-		settings.AutoCreate = data.AutoCreate.ValueBool()
-	}
-	if !data.TableName.IsNull() {
-		settings.TableName = data.TableName.ValueString()
-	}
-	if !data.RemoteServer.IsNull() {
-		settings.RemoteServer = data.RemoteServer.ValueString()
-	}
-	if !data.RemoteProfile.IsNull() {
-		settings.RemoteProfile = data.RemoteProfile.ValueString()
-	}
-	if !data.EnableStoreAndForward.IsNull() {
-		settings.EnableStoreAndForward = data.EnableStoreAndForward.ValueBool()
-	}
-
-	config := client.AuditProfileConfig{
-		Profile:  profile,
-		Settings: settings,
-	}
-
-	res := client.ResourceResponse[client.AuditProfileConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   true,
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateAuditProfile(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating audit profile", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	if updated.Config.Profile.Type != "" {
-		data.Type = types.StringValue(updated.Config.Profile.Type)
-	}
-	data.RetentionDays = types.Int64Value(int64(updated.Config.Profile.RetentionDays))
-	data.Description = types.StringValue(updated.Description)
-
-	if updated.Config.Settings.DatabaseName != "" {
-		data.Database = types.StringValue(updated.Config.Settings.DatabaseName)
-	}
-	data.PruneEnabled = types.BoolValue(updated.Config.Settings.PruneEnabled)
-	data.AutoCreate = types.BoolValue(updated.Config.Settings.AutoCreate)
-	if updated.Config.Settings.TableName != "" {
-		data.TableName = types.StringValue(updated.Config.Settings.TableName)
-	} else if !data.TableName.IsNull() {
-		data.TableName = data.TableName
-	} else {
-		data.TableName = types.StringValue("audit_events")
-	}
-
-	if updated.Config.Settings.RemoteServer != "" {
-		data.RemoteServer = types.StringValue(updated.Config.Settings.RemoteServer)
-	}
-	if updated.Config.Settings.RemoteProfile != "" {
-		data.RemoteProfile = types.StringValue(updated.Config.Settings.RemoteProfile)
-	}
-	data.EnableStoreAndForward = types.BoolValue(updated.Config.Settings.EnableStoreAndForward)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *AuditProfileResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data AuditProfileResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteAuditProfile(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting audit profile", err.Error())
-		return
-	}
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *AuditProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &AuditProfileResourceModel{
+		Name: types.StringValue(req.ID),
+	})...)
 }

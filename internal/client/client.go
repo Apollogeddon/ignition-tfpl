@@ -39,7 +39,7 @@ func (e *APIErrorResponse) Error() string {
 // ResourceResponse represents a generic resource wrapper in Ignition
 type ResourceResponse[T any] struct {
 	Name        string `json:"name"`
-	Enabled     bool   `json:"enabled"`
+	Enabled     *bool  `json:"enabled,omitempty"`
 	Description string `json:"description,omitempty"`
 	Signature   string `json:"signature,omitempty"`
 	Config      T      `json:"config"`

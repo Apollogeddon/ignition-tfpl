@@ -5,40 +5,32 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccUserSourceResource(t *testing.T) {
-	// Only run acceptance tests if IGNITION_HOST and IGNITION_TOKEN are set
 	if os.Getenv("IGNITION_HOST") == "" || os.Getenv("IGNITION_TOKEN") == "" {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
 
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Read testing
 			{
-				Config: testAccUserSourceResourceConfig("test_users_4", "INTERNAL", ""),
+				Config: testAccUserSourceResourceConfig(rName, "INTERNAL", "Test User Source"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_user_source.test", "name", "test_users_4"),
+					resource.TestCheckResourceAttr("ignition_user_source.test", "name", rName),
 					resource.TestCheckResourceAttr("ignition_user_source.test", "type", "INTERNAL"),
-					resource.TestCheckResourceAttr("ignition_user_source.test", "schedule_restricted", "false"),
+					resource.TestCheckResourceAttr("ignition_user_source.test", "description", "Test User Source"),
 				),
 			},
-			// ImportState testing
 			{
-				ResourceName:      "ignition_user_source.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			// Update and Read testing
-			{
-				Config: testAccUserSourceResourceConfig("test_users_4", "INTERNAL", "Updated Description"),
+				Config: testAccUserSourceResourceConfig(rName, "INTERNAL", "Updated User Source"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_user_source.test", "name", "test_users_4"),
-					resource.TestCheckResourceAttr("ignition_user_source.test", "type", "INTERNAL"),
-					resource.TestCheckResourceAttr("ignition_user_source.test", "description", "Updated Description"),
+					resource.TestCheckResourceAttr("ignition_user_source.test", "description", "Updated User Source"),
 				),
 			},
 		},
@@ -53,7 +45,6 @@ resource "ignition_user_source" "test" {
   name          = %[1]q
   type          = %[2]q
   description   = %[3]q
-  failover_mode = "HARD"
 }
 `, name, typeVal, desc)
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -24,7 +23,7 @@ func NewUserSourceResource() resource.Resource {
 
 // UserSourceResource defines the resource implementation.
 type UserSourceResource struct {
-	client client.IgnitionClient
+	GenericIgnitionResource[client.UserSourceConfig, UserSourceResourceModel]
 }
 
 // UserSourceResourceModel describes the resource data model.
@@ -33,6 +32,7 @@ type UserSourceResourceModel struct {
 	Name               types.String `tfsdk:"name"`
 	Type               types.String `tfsdk:"type"`
 	Description        types.String `tfsdk:"description"`
+	Enabled            types.Bool   `tfsdk:"enabled"`
 	FailoverProfile    types.String `tfsdk:"failover_profile"`
 	FailoverMode       types.String `tfsdk:"failover_mode"`
 	ScheduleRestricted types.Bool   `tfsdk:"schedule_restricted"`
@@ -67,6 +67,12 @@ func (r *UserSourceResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"description": schema.StringAttribute{
 				Description: "A description of the user source.",
 				Optional:    true,
+			},
+			"enabled": schema.BoolAttribute{
+				Description: "Whether the user source is enabled.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
 			},
 			"failover_profile": schema.StringAttribute{
 				Description: "If this source is unreachable for authentication, this failover source will be used instead.",
@@ -106,194 +112,94 @@ func (r *UserSourceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	r.client = client
+	r.Client = client
+	r.Handler = r
+	r.CreateFunc = client.CreateUserSource
+	r.GetFunc = client.GetUserSource
+	r.UpdateFunc = client.UpdateUserSource
+	r.DeleteFunc = client.DeleteUserSource
+	r.PopulateBase = func(m *UserSourceResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
+	}
+	r.PopulateModel = func(b *BaseResourceModel, m *UserSourceResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
+	}
+}
+
+func (r *UserSourceResource) MapPlanToClient(ctx context.Context, model *UserSourceResourceModel) (client.UserSourceConfig, error) {
+	profile := client.UserSourceProfile{
+		Type: model.Type.ValueString(),
+	}
+
+	if !model.FailoverProfile.IsNull() {
+		profile.FailoverProfile = model.FailoverProfile.ValueString()
+	}
+	if !model.FailoverMode.IsNull() {
+		profile.FailoverMode = model.FailoverMode.ValueString()
+	}
+	if !model.ScheduleRestricted.IsNull() {
+		profile.ScheduleRestricted = model.ScheduleRestricted.ValueBool()
+	}
+
+	return client.UserSourceConfig{
+		Profile: profile,
+	}, nil
+}
+
+func (r *UserSourceResource) MapClientToState(ctx context.Context, config *client.UserSourceConfig, model *UserSourceResourceModel) error {
+	if config.Profile.Type != "" {
+		model.Type = types.StringValue(config.Profile.Type)
+	}
+	if config.Profile.FailoverProfile != "" {
+		model.FailoverProfile = types.StringValue(config.Profile.FailoverProfile)
+	} else if model.FailoverProfile.IsNull() || model.FailoverProfile.IsUnknown() {
+		model.FailoverProfile = types.StringNull()
+	}
+	
+	if config.Profile.FailoverMode != "" {
+		model.FailoverMode = types.StringValue(config.Profile.FailoverMode)
+	} else if model.FailoverMode.IsNull() || model.FailoverMode.IsUnknown() {
+		model.FailoverMode = types.StringNull()
+	}
+	
+	model.ScheduleRestricted = types.BoolValue(config.Profile.ScheduleRestricted)
+	return nil
 }
 
 func (r *UserSourceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data UserSourceResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	profile := client.UserSourceProfile{
-		Type: data.Type.ValueString(),
-	}
-
-	if !data.FailoverProfile.IsNull() {
-		profile.FailoverProfile = data.FailoverProfile.ValueString()
-	}
-	if !data.FailoverMode.IsNull() {
-		profile.FailoverMode = data.FailoverMode.ValueString()
-	}
-	if !data.ScheduleRestricted.IsNull() {
-		profile.ScheduleRestricted = data.ScheduleRestricted.ValueBool()
-	}
-
-	config := client.UserSourceConfig{
-		Profile: profile,
-	}
-
-	res := client.ResourceResponse[client.UserSourceConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: true,
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateUserSource(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating user source", err.Error())
-		return
-	}
-
-	// Refresh from API to get server-side defaults
-	refreshed, err := r.client.GetUserSource(ctx, created.Name)
-	if err == nil {
-		created = refreshed
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(data.Name.ValueString())
-	if created.Config.Profile.Type != "" {
-		data.Type = types.StringValue(created.Config.Profile.Type)
-	}
-	if created.Description != "" {
-		data.Description = types.StringValue(created.Description)
-	} else if !data.Description.IsNull() && !data.Description.IsUnknown() {
-		data.Description = data.Description
-	} else {
-		data.Description = types.StringNull()
-	}
-
-	if created.Config.Profile.FailoverProfile != "" {
-		data.FailoverProfile = types.StringValue(created.Config.Profile.FailoverProfile)
-	} else {
-		data.FailoverProfile = types.StringNull()
-	}
-	if created.Config.Profile.FailoverMode != "" {
-		data.FailoverMode = types.StringValue(created.Config.Profile.FailoverMode)
-	} else {
-		data.FailoverMode = types.StringNull()
-	}
-	data.ScheduleRestricted = types.BoolValue(created.Config.Profile.ScheduleRestricted)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *UserSourceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data UserSourceResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetUserSource(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading user source", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(data.Name.ValueString())
-	if res.Config.Profile.Type != "" {
-		data.Type = types.StringValue(res.Config.Profile.Type)
-	}
-	data.Description = stringToNullableString(res.Description)
-
-	if res.Config.Profile.FailoverProfile != "" {
-		data.FailoverProfile = types.StringValue(res.Config.Profile.FailoverProfile)
-	} else {
-		data.FailoverProfile = types.StringNull()
-	}
-
-	if res.Config.Profile.FailoverMode != "" {
-		data.FailoverMode = types.StringValue(res.Config.Profile.FailoverMode)
-	} else {
-		data.FailoverMode = types.StringNull()
-	}
-	
-	data.ScheduleRestricted = types.BoolValue(res.Config.Profile.ScheduleRestricted)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *UserSourceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data UserSourceResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	profile := client.UserSourceProfile{
-		Type: data.Type.ValueString(),
-	}
-
-	if !data.FailoverProfile.IsNull() {
-		profile.FailoverProfile = data.FailoverProfile.ValueString()
-	}
-	if !data.FailoverMode.IsNull() {
-		profile.FailoverMode = data.FailoverMode.ValueString()
-	}
-	if !data.ScheduleRestricted.IsNull() {
-		profile.ScheduleRestricted = data.ScheduleRestricted.ValueBool()
-	}
-
-	config := client.UserSourceConfig{
-		Profile: profile,
-	}
-
-	res := client.ResourceResponse[client.UserSourceConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   true,
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateUserSource(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating user source", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	if updated.Config.Profile.Type != "" {
-		data.Type = types.StringValue(updated.Config.Profile.Type)
-	}
-	data.Description = stringToNullableString(updated.Description)
-
-	if updated.Config.Profile.FailoverProfile != "" {
-		data.FailoverProfile = types.StringValue(updated.Config.Profile.FailoverProfile)
-	}
-	if updated.Config.Profile.FailoverMode != "" {
-		data.FailoverMode = types.StringValue(updated.Config.Profile.FailoverMode)
-	}
-	data.ScheduleRestricted = types.BoolValue(updated.Config.Profile.ScheduleRestricted)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *UserSourceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data UserSourceResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteUserSource(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting user source", err.Error())
-		return
-	}
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *UserSourceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &UserSourceResourceModel{
+		Name: types.StringValue(req.ID),
+	})...)
 }

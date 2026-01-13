@@ -12,6 +12,8 @@ import (
 )
 
 func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
+	currentHostname := "mock.smtp.com"
+
 	mockClient := &client.MockClient{
 		CreateAlarmNotificationProfileFunc: func(ctx context.Context, anp client.ResourceResponse[client.AlarmNotificationProfileConfig]) (*client.ResourceResponse[client.AlarmNotificationProfileConfig], error) {
 			if anp.Name != "unit-test-profile" {
@@ -31,17 +33,29 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 			}
 			return &client.ResourceResponse[client.AlarmNotificationProfileConfig]{
 				Name:      "unit-test-profile",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-123",
 				Config: client.AlarmNotificationProfileConfig{
 					Profile: client.AlarmNotificationProfileProfile{Type: "EmailNotificationProfileType"},
 					Settings: map[string]any{
 						"useSmtpProfile": false,
-						"hostname":       "mock.smtp.com",
+						"hostname":       currentHostname,
 						"port":           25,
 					},
 				},
 			}, nil
+		},
+		UpdateAlarmNotificationProfileFunc: func(ctx context.Context, anp client.ResourceResponse[client.AlarmNotificationProfileConfig]) (*client.ResourceResponse[client.AlarmNotificationProfileConfig], error) {
+			if anp.Name != "unit-test-profile" {
+				return nil, fmt.Errorf("expected name 'unit-test-profile', got '%s'", anp.Name)
+			}
+			settings := anp.Config.Settings
+			
+			if v, ok := settings["hostname"].(string); ok {
+				currentHostname = v
+			}
+			anp.Signature = "mock-signature-456" // New signature on update
+			return &anp, nil
 		},
 		DeleteAlarmNotificationProfileFunc: func(ctx context.Context, name, signature string) error {
 			return nil
@@ -77,6 +91,29 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.unit", "name", "unit-test-profile"),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.unit", "signature", "mock-signature-123"),
+					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.unit", "email_config.hostname", "mock.smtp.com"),
+				),
+			},
+			// Update Step
+			{
+				Config: `
+					provider "ignition" {
+						host  = "http://mock-host"
+						token = "mock-token"
+					}
+					resource "ignition_alarm_notification_profile" "unit" {
+						name = "unit-test-profile"
+						type = "EmailNotificationProfileType"
+						email_config {
+							use_smtp_profile = false
+							hostname         = "updated.smtp.com"
+							port             = 25
+						}
+					}
+				`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.unit", "email_config.hostname", "updated.smtp.com"),
+					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.unit", "signature", "mock-signature-456"),
 				),
 			},
 		},

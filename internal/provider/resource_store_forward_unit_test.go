@@ -20,7 +20,7 @@ func TestUnitStoreForwardResource(t *testing.T) {
 			return &client.ResourceResponse[client.StoreAndForwardConfig]{
 				Name:      name,
 				Signature: "sig",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Config: client.StoreAndForwardConfig{
 					TimeThresholdMs:    1000,
 					ForwardRateMs:      1000,

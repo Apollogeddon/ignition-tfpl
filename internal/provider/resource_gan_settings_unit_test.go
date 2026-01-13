@@ -15,7 +15,7 @@ func TestUnitGanSettingsResource(t *testing.T) {
 		GetGanGeneralSettingsFunc: func(ctx context.Context) (*client.ResourceResponse[client.GanGeneralSettingsConfig], error) {
 			return &client.ResourceResponse[client.GanGeneralSettingsConfig]{
 				Name:    "gateway-network-settings",
-				Enabled: true,
+				Enabled: boolPtr(true),
 				Config: client.GanGeneralSettingsConfig{
 					RequireSSL:                  true,
 					RequireTwoWayAuth:           true,

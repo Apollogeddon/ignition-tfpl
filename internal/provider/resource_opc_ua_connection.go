@@ -167,7 +167,7 @@ func (r *OpcUaConnectionResource) Create(ctx context.Context, req resource.Creat
 
 	res := client.ResourceResponse[client.OpcUaConnectionConfig]{
 		Name:    data.Name.ValueString(),
-		Enabled: data.Enabled.ValueBool(),
+		Enabled: boolPtr(data.Enabled.ValueBool()),
 		Config:  config,
 	}
 
@@ -184,7 +184,11 @@ func (r *OpcUaConnectionResource) Create(ctx context.Context, req resource.Creat
 	data.Signature = types.StringValue(created.Signature)
 	data.Id = types.StringValue(created.Name)
 	data.Name = types.StringValue(created.Name)
-	data.Enabled = types.BoolValue(created.Enabled)
+	if created.Enabled != nil {
+		data.Enabled = types.BoolValue(*created.Enabled)
+	} else {
+		data.Enabled = types.BoolValue(true)
+	}
 	
 	if created.Description != "" {
 		data.Description = types.StringValue(created.Description)
@@ -217,7 +221,11 @@ func (r *OpcUaConnectionResource) Read(ctx context.Context, req resource.ReadReq
 	data.Signature = types.StringValue(res.Signature)
 	data.Id = types.StringValue(res.Name)
 	data.Name = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
+	if res.Enabled != nil {
+		data.Enabled = types.BoolValue(*res.Enabled)
+	} else {
+		data.Enabled = types.BoolValue(true)
+	}
 	
 	if res.Description != "" {
 		data.Description = types.StringValue(res.Description)
@@ -263,7 +271,7 @@ func (r *OpcUaConnectionResource) Update(ctx context.Context, req resource.Updat
 
 	res := client.ResourceResponse[client.OpcUaConnectionConfig]{
 		Name:      data.Name.ValueString(),
-		Enabled:   data.Enabled.ValueBool(),
+		Enabled:   boolPtr(data.Enabled.ValueBool()),
 		Signature: data.Signature.ValueString(),
 		Config:    config,
 	}
@@ -287,6 +295,12 @@ func (r *OpcUaConnectionResource) Update(ctx context.Context, req resource.Updat
 	
 	if updated.Description != "" {
 		data.Description = types.StringValue(updated.Description)
+	}
+
+	if updated.Enabled != nil {
+		data.Enabled = types.BoolValue(*updated.Enabled)
+	} else {
+		data.Enabled = types.BoolValue(true)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

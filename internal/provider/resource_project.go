@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -23,7 +22,7 @@ func NewProjectResource() resource.Resource {
 
 // ProjectResource defines the resource implementation.
 type ProjectResource struct {
-	client client.IgnitionClient
+	GenericIgnitionResource[client.Project, ProjectResourceModel]
 }
 
 // ProjectResourceModel describes the resource data model.
@@ -31,8 +30,8 @@ type ProjectResourceModel struct {
 	Id               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
-	Title            types.String `tfsdk:"title"`
 	Enabled          types.Bool   `tfsdk:"enabled"`
+	Title            types.String `tfsdk:"title"`
 	Parent           types.String `tfsdk:"parent"`
 	Inheritable      types.Bool   `tfsdk:"inheritable"`
 	DefaultDB        types.String `tfsdk:"default_db"`
@@ -109,7 +108,7 @@ func (r *ProjectResource) Configure(ctx context.Context, req resource.ConfigureR
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	apiClient, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -118,167 +117,135 @@ func (r *ProjectResource) Configure(ctx context.Context, req resource.ConfigureR
 		return
 	}
 
-	r.client = client
+	r.Client = apiClient
+	r.Handler = r
+	
+	// Wrap project methods to match ResourceResponse pattern
+	r.CreateFunc = func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
+		p, err := apiClient.CreateProject(ctx, res.Config)
+		if err != nil {
+			return nil, err
+		}
+		return &client.ResourceResponse[client.Project]{
+			Name:    p.Name,
+			Enabled: &p.Enabled,
+			Config:  *p,
+		}, nil
+	}
+	r.GetFunc = func(ctx context.Context, name string) (*client.ResourceResponse[client.Project], error) {
+		p, err := apiClient.GetProject(ctx, name)
+		if err != nil {
+			return nil, err
+		}
+		return &client.ResourceResponse[client.Project]{
+			Name:    p.Name,
+			Enabled: &p.Enabled,
+			Config:  *p,
+		}, nil
+	}
+	r.UpdateFunc = func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
+		p, err := apiClient.UpdateProject(ctx, res.Config)
+		if err != nil {
+			return nil, err
+		}
+		return &client.ResourceResponse[client.Project]{
+			Name:    p.Name,
+			Enabled: &p.Enabled,
+			Config:  *p,
+		}, nil
+	}
+	r.DeleteFunc = func(ctx context.Context, name, signature string) error {
+		return apiClient.DeleteProject(ctx, name)
+	}
+
+	r.PopulateBase = func(m *ProjectResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Id = m.Id
+		// Signature is left as null/unknown in base
+	}
+	r.PopulateModel = func(b *BaseResourceModel, m *ProjectResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Id = b.Id
+	}
+}
+
+func (r *ProjectResource) MapPlanToClient(ctx context.Context, model *ProjectResourceModel) (client.Project, error) {
+	p := client.Project{
+		Name: model.Name.ValueString(),
+	}
+	if !model.Description.IsNull() {
+		p.Description = model.Description.ValueString()
+	}
+	if !model.Title.IsNull() {
+		p.Title = model.Title.ValueString()
+	}
+	if !model.Enabled.IsNull() {
+		p.Enabled = model.Enabled.ValueBool()
+	}
+	if !model.Parent.IsNull() {
+		p.Parent = model.Parent.ValueString()
+	}
+	if !model.Inheritable.IsNull() {
+		p.Inheritable = model.Inheritable.ValueBool()
+	}
+	if !model.DefaultDB.IsNull() {
+		p.DefaultDB = model.DefaultDB.ValueString()
+	}
+	if !model.TagProvider.IsNull() {
+		p.TagProvider = model.TagProvider.ValueString()
+	}
+	if !model.UserSource.IsNull() {
+		p.UserSource = model.UserSource.ValueString()
+	}
+	if !model.IdentityProvider.IsNull() {
+		p.IdentityProvider = model.IdentityProvider.ValueString()
+	}
+	return p, nil
+}
+
+func (r *ProjectResource) MapClientToState(ctx context.Context, p *client.Project, model *ProjectResourceModel) error {
+	model.Description = stringToNullableString(p.Description)
+	model.Title = stringToNullableString(p.Title)
+	model.Enabled = types.BoolValue(p.Enabled)
+	model.Parent = stringToNullableString(p.Parent)
+	model.Inheritable = types.BoolValue(p.Inheritable)
+	model.DefaultDB = stringToNullableString(p.DefaultDB)
+	model.TagProvider = stringToNullableString(p.TagProvider)
+	model.UserSource = stringToNullableString(p.UserSource)
+	model.IdentityProvider = stringToNullableString(p.IdentityProvider)
+	return nil
 }
 
 func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ProjectResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	project := client.Project{
-		Name: data.Name.ValueString(),
-	}
-
-	if !data.Description.IsNull() {
-		project.Description = data.Description.ValueString()
-	}
-	if !data.Title.IsNull() {
-		project.Title = data.Title.ValueString()
-	}
-	if !data.Enabled.IsNull() {
-		project.Enabled = data.Enabled.ValueBool()
-	}
-	if !data.Parent.IsNull() {
-		project.Parent = data.Parent.ValueString()
-	}
-	if !data.Inheritable.IsNull() {
-		project.Inheritable = data.Inheritable.ValueBool()
-	}
-	if !data.DefaultDB.IsNull() {
-		project.DefaultDB = data.DefaultDB.ValueString()
-	}
-	if !data.TagProvider.IsNull() {
-		project.TagProvider = data.TagProvider.ValueString()
-	}
-	if !data.UserSource.IsNull() {
-		project.UserSource = data.UserSource.ValueString()
-	}
-	if !data.IdentityProvider.IsNull() {
-		project.IdentityProvider = data.IdentityProvider.ValueString()
-	}
-
-	created, err := r.client.CreateProject(ctx, project)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating project", err.Error())
-		return
-	}
-
-	data.Description = stringToNullableString(created.Description)
-	data.Id = types.StringValue(data.Name.ValueString())
-	data.Title = stringToNullableString(created.Title)
-	data.Enabled = types.BoolValue(created.Enabled)
-	data.Parent = stringToNullableString(created.Parent)
-	data.Inheritable = types.BoolValue(created.Inheritable)
-	data.DefaultDB = stringToNullableString(created.DefaultDB)
-	data.TagProvider = stringToNullableString(created.TagProvider)
-	data.UserSource = stringToNullableString(created.UserSource)
-	data.IdentityProvider = stringToNullableString(created.IdentityProvider)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data ProjectResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetProject(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading project", err.Error())
-		return
-	}
-
-	data.Description = stringToNullableString(res.Description)
-	data.Id = types.StringValue(data.Name.ValueString())
-	data.Title = stringToNullableString(res.Title)
-	data.Enabled = types.BoolValue(res.Enabled)
-	data.Parent = stringToNullableString(res.Parent)
-	data.Inheritable = types.BoolValue(res.Inheritable)
-	data.DefaultDB = stringToNullableString(res.DefaultDB)
-	data.TagProvider = stringToNullableString(res.TagProvider)
-	data.UserSource = stringToNullableString(res.UserSource)
-	data.IdentityProvider = stringToNullableString(res.IdentityProvider)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data ProjectResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	project := client.Project{
-		Name: data.Name.ValueString(),
-	}
-
-	if !data.Description.IsNull() {
-		project.Description = data.Description.ValueString()
-	}
-	if !data.Title.IsNull() {
-		project.Title = data.Title.ValueString()
-	}
-	if !data.Enabled.IsNull() {
-		project.Enabled = data.Enabled.ValueBool()
-	}
-	if !data.Parent.IsNull() {
-		project.Parent = data.Parent.ValueString()
-	}
-	if !data.Inheritable.IsNull() {
-		project.Inheritable = data.Inheritable.ValueBool()
-	}
-	if !data.DefaultDB.IsNull() {
-		project.DefaultDB = data.DefaultDB.ValueString()
-	}
-	if !data.TagProvider.IsNull() {
-		project.TagProvider = data.TagProvider.ValueString()
-	}
-	if !data.UserSource.IsNull() {
-		project.UserSource = data.UserSource.ValueString()
-	}
-	if !data.IdentityProvider.IsNull() {
-		project.IdentityProvider = data.IdentityProvider.ValueString()
-	}
-
-	updated, err := r.client.UpdateProject(ctx, project)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating project", err.Error())
-		return
-	}
-
-	data.Description = stringToNullableString(updated.Description)
-	data.Title = stringToNullableString(updated.Title)
-	data.Enabled = types.BoolValue(updated.Enabled)
-	data.Parent = stringToNullableString(updated.Parent)
-	data.Inheritable = types.BoolValue(updated.Inheritable)
-	data.DefaultDB = stringToNullableString(updated.DefaultDB)
-	data.TagProvider = stringToNullableString(updated.TagProvider)
-	data.UserSource = stringToNullableString(updated.UserSource)
-	data.IdentityProvider = stringToNullableString(updated.IdentityProvider)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data ProjectResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	err := r.client.DeleteProject(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting project", err.Error())
-		return
-	}
+	var base BaseResourceModel
+	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &ProjectResourceModel{
+		Name: types.StringValue(req.ID),
+	})...)
 }

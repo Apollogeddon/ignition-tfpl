@@ -35,12 +35,21 @@ type GenericIgnitionResource[T any, M any] struct {
 	GetFunc    func(context.Context, string) (*client.ResourceResponse[T], error)
 	UpdateFunc func(context.Context, client.ResourceResponse[T]) (*client.ResourceResponse[T], error)
 	DeleteFunc func(context.Context, string, string) error
+
+	// Helper to extract base fields from the model
+	PopulateBase func(*M, *BaseResourceModel)
+	// Helper to update the model from base fields
+	PopulateModel func(*BaseResourceModel, *M)
 }
 
 func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse, data *M, base *BaseResourceModel) {
 	resp.Diagnostics.Append(req.Plan.Get(ctx, data)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if r.PopulateBase != nil {
+		r.PopulateBase(data, base)
 	}
 
 	config, err := r.Handler.MapPlanToClient(ctx, data)
@@ -51,7 +60,7 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 
 	res := client.ResourceResponse[T]{
 		Name:    base.Name.ValueString(),
-		Enabled: base.Enabled.ValueBool(),
+		Enabled: boolPtr(base.Enabled.ValueBool()),
 		Config:  config,
 	}
 
@@ -67,10 +76,24 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 
 	base.Signature = types.StringValue(created.Signature)
 	base.Id = types.StringValue(created.Name)
+	if created.Enabled != nil {
+		base.Enabled = types.BoolValue(*created.Enabled)
+	} else {
+		base.Enabled = types.BoolValue(true)
+	}
+	if created.Description != "" {
+		base.Description = types.StringValue(created.Description)
+	} else if base.Description.IsNull() || base.Description.IsUnknown() {
+		base.Description = types.StringNull()
+	}
 	
 	if err := r.Handler.MapClientToState(ctx, &created.Config, data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return
+	}
+
+	if r.PopulateModel != nil {
+		r.PopulateModel(base, data)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -82,6 +105,10 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 		return
 	}
 
+	if r.PopulateBase != nil {
+		r.PopulateBase(data, base)
+	}
+
 	res, err := r.GetFunc(ctx, base.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading resource", err.Error())
@@ -90,17 +117,25 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 
 	base.Signature = types.StringValue(res.Signature)
 	base.Id = types.StringValue(res.Name)
-	base.Enabled = types.BoolValue(res.Enabled)
+	if res.Enabled != nil {
+		base.Enabled = types.BoolValue(*res.Enabled)
+	} else {
+		base.Enabled = types.BoolValue(true)
+	}
 	
 	if res.Description != "" {
 		base.Description = types.StringValue(res.Description)
-	} else {
+	} else if base.Description.IsNull() || base.Description.IsUnknown() {
 		base.Description = types.StringNull()
 	}
 
 	if err := r.Handler.MapClientToState(ctx, &res.Config, data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return
+	}
+
+	if r.PopulateModel != nil {
+		r.PopulateModel(base, data)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -112,6 +147,18 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 		return
 	}
 
+	// Retrieve existing signature from state
+	var stateModel M
+	var stateBase BaseResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &stateModel)...)
+	if !resp.Diagnostics.HasError() && r.PopulateBase != nil {
+		r.PopulateBase(&stateModel, &stateBase)
+	}
+
+	if r.PopulateBase != nil {
+		r.PopulateBase(data, base)
+	}
+
 	config, err := r.Handler.MapPlanToClient(ctx, data)
 	if err != nil {
 		resp.Diagnostics.AddError("Error mapping plan to client", err.Error())
@@ -120,8 +167,8 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 
 	res := client.ResourceResponse[T]{
 		Name:      base.Name.ValueString(),
-		Enabled:   base.Enabled.ValueBool(),
-		Signature: base.Signature.ValueString(),
+		Enabled:   boolPtr(base.Enabled.ValueBool()),
+		Signature: stateBase.Signature.ValueString(),
 		Config:    config,
 	}
 
@@ -135,11 +182,39 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 		return
 	}
 
-	base.Signature = types.StringValue(updated.Signature)
+	if updated.Signature != "" {
+		base.Signature = types.StringValue(updated.Signature)
+	} else {
+		// Attempt to fetch the latest signature if not returned by Update
+		fresh, err := r.GetFunc(ctx, base.Name.ValueString())
+		if err == nil && fresh.Signature != "" {
+			base.Signature = types.StringValue(fresh.Signature)
+			updated = fresh
+		} else if !stateBase.Signature.IsNull() && !stateBase.Signature.IsUnknown() {
+			base.Signature = stateBase.Signature
+			resp.Diagnostics.AddWarning("Missing Signature on Update", 
+				"The API returned an empty signature after update and refresh failed. Preserving the existing signature.")
+		}
+	}
+
+	if updated.Enabled != nil {
+		base.Enabled = types.BoolValue(*updated.Enabled)
+	} else {
+		base.Enabled = types.BoolValue(true)
+	}
+	if updated.Description != "" {
+		base.Description = types.StringValue(updated.Description)
+	} else if base.Description.IsNull() || base.Description.IsUnknown() {
+		base.Description = types.StringNull()
+	}
 	
 	if err := r.Handler.MapClientToState(ctx, &updated.Config, data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return
+	}
+
+	if r.PopulateModel != nil {
+		r.PopulateModel(base, data)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -149,6 +224,10 @@ func (r *GenericIgnitionResource[T, M]) Delete(ctx context.Context, req resource
 	resp.Diagnostics.Append(req.State.Get(ctx, data)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if r.PopulateBase != nil {
+		r.PopulateBase(data, base)
 	}
 
 	err := r.DeleteFunc(ctx, base.Name.ValueString(), base.Signature.ValueString())
@@ -165,4 +244,8 @@ func stringToNullableString(s string) types.String {
 		return types.StringNull()
 	}
 	return types.StringValue(s)
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

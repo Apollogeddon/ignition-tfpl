@@ -144,7 +144,11 @@ func (d *StoreAndForwardDataSource) Read(ctx context.Context, req datasource.Rea
 	}
 
 	data.Id = types.StringValue(res.Name)
-	data.Enabled = types.BoolValue(res.Enabled)
+	if res.Enabled != nil {
+		data.Enabled = types.BoolValue(*res.Enabled)
+	} else {
+		data.Enabled = types.BoolValue(true)
+	}
 	data.Description = types.StringValue(res.Description)
 	
 	data.TimeThresholdMs = types.Int64Value(int64(res.Config.TimeThresholdMs))

@@ -23,21 +23,21 @@ func TestUnitCoreResources(t *testing.T) {
 			return &db, nil
 		},
 		GetDatabaseConnectionFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.DatabaseConfig], error) {
-			return &client.ResourceResponse[client.DatabaseConfig]{Name: name, Signature: "sig", Enabled: true, Config: client.DatabaseConfig{Driver: "MySQL"}}, nil
+			return &client.ResourceResponse[client.DatabaseConfig]{Name: name, Signature: "sig", Enabled: boolPtr(true), Config: client.DatabaseConfig{Driver: "MySQL"}}, nil
 		},
 		CreateTagProviderFunc: func(ctx context.Context, tp client.ResourceResponse[client.TagProviderConfig]) (*client.ResourceResponse[client.TagProviderConfig], error) {
 			tp.Signature = "sig"
 			return &tp, nil
 		},
 		GetTagProviderFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.TagProviderConfig], error) {
-			return &client.ResourceResponse[client.TagProviderConfig]{Name: name, Signature: "sig", Enabled: true, Config: client.TagProviderConfig{Type: "standard"}}, nil
+			return &client.ResourceResponse[client.TagProviderConfig]{Name: name, Signature: "sig", Enabled: boolPtr(true), Config: client.TagProviderConfig{Type: "standard"}}, nil
 		},
 		CreateUserSourceFunc: func(ctx context.Context, us client.ResourceResponse[client.UserSourceConfig]) (*client.ResourceResponse[client.UserSourceConfig], error) {
 			us.Signature = "sig"
 			return &us, nil
 		},
 		GetUserSourceFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.UserSourceConfig], error) {
-			return &client.ResourceResponse[client.UserSourceConfig]{Name: name, Signature: "sig", Enabled: true, Config: client.UserSourceConfig{Profile: client.UserSourceProfile{Type: "internal"}}}, nil
+			return &client.ResourceResponse[client.UserSourceConfig]{Name: name, Signature: "sig", Enabled: boolPtr(true), Config: client.UserSourceConfig{Profile: client.UserSourceProfile{Type: "internal"}}}, nil
 		},
 	}
 

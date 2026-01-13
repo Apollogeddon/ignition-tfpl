@@ -106,7 +106,7 @@ func (r *TagProviderResource) Create(ctx context.Context, req resource.CreateReq
 
 	res := client.ResourceResponse[client.TagProviderConfig]{
 		Name:    data.Name.ValueString(),
-		Enabled: true,
+		Enabled: boolPtr(true),
 		Config:  config,
 	}
 

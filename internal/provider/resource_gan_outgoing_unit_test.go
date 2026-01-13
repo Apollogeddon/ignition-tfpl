@@ -23,7 +23,7 @@ func TestUnitGanOutgoingResource_Create(t *testing.T) {
 		GetGanOutgoingFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.GanOutgoingConfig], error) {
 			return &client.ResourceResponse[client.GanOutgoingConfig]{
 				Name:      name,
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-gan",
 				Config: client.GanOutgoingConfig{
 					Host:                     "192.168.1.100",

@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,16 +14,19 @@ func TestAccAuditProfileResource(t *testing.T) {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
 
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	dbName := "db_" + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccAuditProfileResourceConfig("test_audit_4", "database", "test_audit_db_4"),
+				Config: testAccAuditProfileResourceConfig(rName, "database", dbName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_audit_profile.test", "name", "test_audit_4"),
+					resource.TestCheckResourceAttr("ignition_audit_profile.test", "name", rName),
 					resource.TestCheckResourceAttr("ignition_audit_profile.test", "type", "database"),
-					resource.TestCheckResourceAttr("ignition_audit_profile.test", "database", "test_audit_db_4"),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", dbName),
 					resource.TestCheckResourceAttr("ignition_audit_profile.test", "retention_days", "90"),
 				),
 			},
@@ -34,9 +38,9 @@ func TestAccAuditProfileResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccAuditProfileResourceConfig("test_audit_4", "database", "test_audit_db_4"),
+				Config: testAccAuditProfileResourceConfig(rName, "database", dbName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_audit_profile.test", "name", "test_audit_4"),
+					resource.TestCheckResourceAttr("ignition_audit_profile.test", "name", rName),
 				),
 			},
 		},

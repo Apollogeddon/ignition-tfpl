@@ -19,7 +19,7 @@ func TestUnitSMTPProfileResource_Create(t *testing.T) {
 		GetSMTPProfileFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.SMTPProfileConfig], error) {
 			return &client.ResourceResponse[client.SMTPProfileConfig]{
 				Name:      "unit-test-smtp",
-				Enabled:   true,
+				Enabled:   boolPtr(true),
 				Signature: "mock-signature-smtp",
 				Config: client.SMTPProfileConfig{
 					Profile: client.SMTPProfileProfile{Type: "smtp.classic"},

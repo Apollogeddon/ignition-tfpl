@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -14,14 +15,16 @@ func TestAccAlarmNotificationProfileResource(t *testing.T) {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
 
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccAlarmNotificationProfileResourceConfig("test_email_profile", "EmailNotificationProfileType", "smtp.example.com", 25),
+				Config: testAccAlarmNotificationProfileResourceConfig(rName, "EmailNotificationProfileType", "smtp.example.com", 25),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "name", "test_email_profile"),
+					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "name", rName),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "type", "EmailNotificationProfileType"),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "email_config.hostname", "smtp.example.com"),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "email_config.port", "25"),
@@ -37,9 +40,9 @@ func TestAccAlarmNotificationProfileResource(t *testing.T) {
 			},
 			// Update and Read testing
 			{
-				Config: testAccAlarmNotificationProfileResourceConfig("test_email_profile", "EmailNotificationProfileType", "smtp.updated.com", 587),
+				Config: testAccAlarmNotificationProfileResourceConfig(rName, "EmailNotificationProfileType", "smtp.updated.com", 587),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "name", "test_email_profile"),
+					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "name", rName),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "type", "EmailNotificationProfileType"),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "email_config.hostname", "smtp.updated.com"),
 					resource.TestCheckResourceAttr("ignition_alarm_notification_profile.test", "email_config.port", "587"),

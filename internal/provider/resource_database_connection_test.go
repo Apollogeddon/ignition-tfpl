@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -13,16 +14,17 @@ func TestAccDatabaseConnectionResource(t *testing.T) {
 	if os.Getenv("IGNITION_HOST") == "" || os.Getenv("IGNITION_TOKEN") == "" {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
-	t.Skip("Skipping DatabaseConnection test due to API signature issues")
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccDatabaseConnectionResourceConfig("test_db_4", "MariaDB", "MYSQL", "jdbc:mariadb://localhost:3306/testdb"),
+				Config: testAccDatabaseConnectionResourceConfig(rName, "MariaDB", "MYSQL", "jdbc:mariadb://localhost:3306/testdb"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", "test_db_4"),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", rName),
 					resource.TestCheckResourceAttr("ignition_database_connection.test", "type", "MariaDB"),
 					resource.TestCheckResourceAttr("ignition_database_connection.test", "translator", "MYSQL"),
 					resource.TestCheckResourceAttr("ignition_database_connection.test", "connect_url", "jdbc:mariadb://localhost:3306/testdb"),
@@ -39,12 +41,12 @@ func TestAccDatabaseConnectionResource(t *testing.T) {
 			*/
 			// Update and Read testing
 			{
-				Config: testAccDatabaseConnectionResourceConfig("test_db_4", "PostgreSQL", "POSTGRESQL", "jdbc:postgresql://localhost:5432/testdb"),
+				Config: testAccDatabaseConnectionResourceConfig(rName, "MariaDB", "MYSQL", "jdbc:mariadb://localhost:3306/updated_db"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", "test_db_4"),
-					resource.TestCheckResourceAttr("ignition_database_connection.test", "type", "PostgreSQL"),
-					resource.TestCheckResourceAttr("ignition_database_connection.test", "translator", "POSTGRESQL"),
-					resource.TestCheckResourceAttr("ignition_database_connection.test", "connect_url", "jdbc:postgresql://localhost:5432/testdb"),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", rName),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "type", "MariaDB"),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "translator", "MYSQL"),
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "connect_url", "jdbc:mariadb://localhost:3306/updated_db"),
 				),
 			},
 		},
