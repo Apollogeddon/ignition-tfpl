@@ -96,6 +96,12 @@ type MockClient struct {
 	// GAN General Settings
 	GetGanGeneralSettingsFunc    func(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error)
 	UpdateGanGeneralSettingsFunc func(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error)
+
+	// Devices
+	GetDeviceFunc    func(ctx context.Context, name string) (*ResourceResponse[DeviceConfig], error)
+	CreateDeviceFunc func(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	UpdateDeviceFunc func(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	DeleteDeviceFunc func(ctx context.Context, name, signature string) error
 }
 
 // Generic
@@ -498,4 +504,30 @@ func (m *MockClient) UpdateGanGeneralSettings(ctx context.Context, item Resource
 		return m.UpdateGanGeneralSettingsFunc(ctx, item)
 	}
 	return &ResourceResponse[GanGeneralSettingsConfig]{}, nil
+}
+
+// Devices
+func (m *MockClient) GetDevice(ctx context.Context, name string) (*ResourceResponse[DeviceConfig], error) {
+	if m.GetDeviceFunc != nil {
+		return m.GetDeviceFunc(ctx, name)
+	}
+	return &ResourceResponse[DeviceConfig]{}, nil
+}
+func (m *MockClient) CreateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
+	if m.CreateDeviceFunc != nil {
+		return m.CreateDeviceFunc(ctx, item)
+	}
+	return &ResourceResponse[DeviceConfig]{}, nil
+}
+func (m *MockClient) UpdateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
+	if m.UpdateDeviceFunc != nil {
+		return m.UpdateDeviceFunc(ctx, item)
+	}
+	return &ResourceResponse[DeviceConfig]{}, nil
+}
+func (m *MockClient) DeleteDevice(ctx context.Context, name, signature string) error {
+	if m.DeleteDeviceFunc != nil {
+		return m.DeleteDeviceFunc(ctx, name, signature)
+	}
+	return nil
 }

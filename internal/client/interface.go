@@ -97,4 +97,10 @@ type IgnitionClient interface {
 	// GAN General Settings
 	GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error)
 	UpdateGanGeneralSettings(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error)
+
+	// Devices
+	GetDevice(ctx context.Context, name string) (*ResourceResponse[DeviceConfig], error)
+	CreateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	UpdateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	DeleteDevice(ctx context.Context, name, signature string) error
 }

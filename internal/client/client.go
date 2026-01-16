@@ -1033,3 +1033,39 @@ func (c *Client) UpdateGanGeneralSettings(ctx context.Context, item ResourceResp
 	}
 	return &resp, nil
 }
+
+// Devices
+
+// DeviceConfig represents the configuration for a Device (driver)
+type DeviceConfig map[string]any
+
+func (c *Client) GetDevice(ctx context.Context, name string) (*ResourceResponse[DeviceConfig], error) {
+	var resp ResourceResponse[DeviceConfig]
+	err := c.GetResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", name, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) CreateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
+	var resp ResourceResponse[DeviceConfig]
+	err := c.CreateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) UpdateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
+	var resp ResourceResponse[DeviceConfig]
+	err := c.UpdateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", item, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (c *Client) DeleteDevice(ctx context.Context, name, signature string) error {
+	return c.DeleteResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", name, signature)
+}

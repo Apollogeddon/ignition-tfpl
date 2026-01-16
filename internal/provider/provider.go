@@ -163,6 +163,7 @@ func (p *IgnitionProvider) Resources(ctx context.Context) []func() resource.Reso
 		NewGanOutgoingResource,
 		NewRedundancyResource,
 		NewGanGeneralSettingsResource,
+		NewDeviceResource,
 	}
 }
 
