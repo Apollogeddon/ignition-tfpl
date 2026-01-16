@@ -36,6 +36,7 @@ resource "ignition_audit_profile" "example" {
 - `database` (String) The database connection to use to store audit events (for 'database' type).
 - `description` (String) The description of the audit profile.
 - `enable_store_and_forward` (Boolean) If enabled, audit events will be stored through the store and forward system (for 'remote' type).
+- `enabled` (Boolean) Whether the audit profile is enabled.
 - `prune_enabled` (Boolean) If false, this audit profile will never prune records (for 'database' type). Default: false.
 - `remote_profile` (String) The audit profile on the remote system to log events into (for 'remote' type).
 - `remote_server` (String) The remote system to send audit events to (for 'remote' type).

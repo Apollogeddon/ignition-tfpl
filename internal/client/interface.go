@@ -15,6 +15,9 @@ type IgnitionClient interface {
 	UpdateResourceWithModule(ctx context.Context, module, resourceType string, item any, dest any) error
 	DeleteResourceWithModule(ctx context.Context, module, resourceType, name, signature string) error
 
+	// Secrets
+	EncryptSecret(ctx context.Context, plaintext string) (*IgnitionSecret, error)
+
 	// Projects
 	GetProject(ctx context.Context, name string) (*Project, error)
 	CreateProject(ctx context.Context, p Project) (*Project, error)

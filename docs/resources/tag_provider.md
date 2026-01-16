@@ -34,4 +34,5 @@ resource "ignition_tag_provider" "example" {
 
 ### Read-Only
 
+- `id` (String) The ID of this resource.
 - `signature` (String) The signature of the resource.

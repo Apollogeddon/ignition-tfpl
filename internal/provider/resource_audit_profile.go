@@ -146,6 +146,8 @@ func (r *AuditProfileResource) Configure(ctx context.Context, req resource.Confi
 
 	r.Client = apiClient
 	r.Handler = r
+	r.Module = "ignition"
+	r.ResourceType = "audit-profile"
 	r.CreateFunc = apiClient.CreateAuditProfile
 	r.GetFunc = apiClient.GetAuditProfile
 	r.UpdateFunc = apiClient.UpdateAuditProfile
@@ -204,19 +206,19 @@ func (r *AuditProfileResource) MapPlanToClient(ctx context.Context, model *Audit
 	}, nil
 }
 
-func (r *AuditProfileResource) MapClientToState(ctx context.Context, config *client.AuditProfileConfig, model *AuditProfileResourceModel) error {
+func (r *AuditProfileResource) MapClientToState(ctx context.Context, name string, config *client.AuditProfileConfig, model *AuditProfileResourceModel) error {
+	model.Name = types.StringValue(name)
+	
 	if config.Profile.Type != "" {
 		model.Type = types.StringValue(config.Profile.Type)
 	}
 	
-	if config.Profile.RetentionDays != 0 || model.RetentionDays.IsNull() || model.RetentionDays.IsUnknown() {
+	if config.Profile.RetentionDays != 0 {
 		model.RetentionDays = types.Int64Value(int64(config.Profile.RetentionDays))
 	}
 	
 	if config.Settings.DatabaseName != "" {
 		model.Database = types.StringValue(config.Settings.DatabaseName)
-	} else if model.Database.IsNull() || model.Database.IsUnknown() {
-		model.Database = types.StringNull()
 	}
 
 	model.PruneEnabled = types.BoolValue(config.Settings.PruneEnabled)
@@ -227,21 +229,15 @@ func (r *AuditProfileResource) MapClientToState(ctx context.Context, config *cli
 	} else if model.TableName.IsNull() || model.TableName.IsUnknown() {
 		if model.Type.ValueString() == "database" {
 			model.TableName = types.StringValue("audit_events")
-		} else {
-			model.TableName = types.StringNull()
 		}
 	}
 
 	if config.Settings.RemoteServer != "" {
 		model.RemoteServer = types.StringValue(config.Settings.RemoteServer)
-	} else if model.RemoteServer.IsNull() || model.RemoteServer.IsUnknown() {
-		model.RemoteServer = types.StringNull()
 	}
 
 	if config.Settings.RemoteProfile != "" {
 		model.RemoteProfile = types.StringValue(config.Settings.RemoteProfile)
-	} else if model.RemoteProfile.IsNull() || model.RemoteProfile.IsUnknown() {
-		model.RemoteProfile = types.StringNull()
 	}
 
 	model.EnableStoreAndForward = types.BoolValue(config.Settings.EnableStoreAndForward)
@@ -275,6 +271,7 @@ func (r *AuditProfileResource) Delete(ctx context.Context, req resource.DeleteRe
 
 func (r *AuditProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.Set(ctx, &AuditProfileResourceModel{
+		Id:   types.StringValue(req.ID),
 		Name: types.StringValue(req.ID),
 	})...)
 }

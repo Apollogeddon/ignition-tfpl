@@ -22,7 +22,12 @@ type Client struct {
 
 // APIErrorResponse represents the structure of error responses from the Ignition API
 type APIErrorResponse struct {
-	Success bool `json:"success"`
+	Success       bool     `json:"success"`
+	Messages      []string `json:"messages,omitempty"`
+	FieldMessages []struct {
+		FieldName string   `json:"fieldName"`
+		Messages  []string `json:"messages"`
+	} `json:"fieldMessages,omitempty"`
 	Problem *struct {
 		Message    string   `json:"message"`
 		StackTrace []string `json:"stacktrace,omitempty"`
@@ -30,19 +35,41 @@ type APIErrorResponse struct {
 }
 
 func (e *APIErrorResponse) Error() string {
+	var msg string
 	if e.Problem != nil {
-		return fmt.Sprintf("API error: %s", e.Problem.Message)
+		msg = fmt.Sprintf("API error: %s", e.Problem.Message)
+	} else if len(e.Messages) > 0 {
+		msg = fmt.Sprintf("API error: %v", e.Messages)
+	} else {
+		msg = "unknown API error"
 	}
-	return "unknown API error"
+
+	if len(e.FieldMessages) > 0 {
+		msg += fmt.Sprintf(" (Field Errors: %v)", e.FieldMessages)
+	}
+	return msg
 }
 
 // ResourceResponse represents a generic resource wrapper in Ignition
 type ResourceResponse[T any] struct {
+	Module      string `json:"module,omitempty"`
+	Type        string `json:"type,omitempty"`
 	Name        string `json:"name"`
 	Enabled     *bool  `json:"enabled,omitempty"`
 	Description string `json:"description,omitempty"`
 	Signature   string `json:"signature,omitempty"`
 	Config      T      `json:"config"`
+}
+
+// ResourceChangesResponse represents the response for create/update/delete operations
+type ResourceChangesResponse struct {
+	Success bool `json:"success"`
+	Changes []struct {
+		Name         string `json:"name"`
+		Type         string `json:"type"`
+		Collection   string `json:"collection"`
+		NewSignature string `json:"newSignature"`
+	} `json:"changes"`
 }
 
 // DatabaseConfig represents the specific configuration for a database connection
@@ -418,21 +445,7 @@ func (c *Client) CreateResource(ctx context.Context, resourceType string, item a
 		return err
 	}
 
-	// API returns an array or a single object of created resources
-	if len(body) > 0 && body[0] == '{' {
-		return json.Unmarshal(body, dest)
-	}
-
-	var rawItems []json.RawMessage
-	if err := json.Unmarshal(body, &rawItems); err != nil {
-		return err
-	}
-
-	if len(rawItems) == 0 {
-		return fmt.Errorf("no resources returned from creation")
-	}
-
-	return json.Unmarshal(rawItems[0], dest)
+	return c.unmarshalResourceResponse(ctx, "ignition", resourceType, body, dest)
 }
 
 func (c *Client) UpdateResource(ctx context.Context, resourceType string, item any, dest any) error {
@@ -448,8 +461,27 @@ func (c *Client) UpdateResource(ctx context.Context, resourceType string, item a
 		return err
 	}
 
-	// API returns an array or a single object
-	if len(body) > 0 && body[0] == '{' {
+	return c.unmarshalResourceResponse(ctx, "ignition", resourceType, body, dest)
+}
+
+func (c *Client) unmarshalResourceResponse(ctx context.Context, module, resourceType string, body []byte, dest any) error {
+	if len(body) == 0 {
+		return fmt.Errorf("empty response body")
+	}
+
+	// Try unmarshaling as ResourceChangesResponse first
+	var changes ResourceChangesResponse
+	if err := json.Unmarshal(body, &changes); err == nil && len(changes.Changes) > 0 {
+		name := changes.Changes[0].Name
+		if name == "" {
+			return fmt.Errorf("API returned success but no resource name in changes")
+		}
+		// Since the create/update response doesn't contain the full object, fetch it
+		return c.GetResourceWithModule(ctx, module, resourceType, name, dest)
+	}
+
+	// Fallback to old behavior: API returns an array or a single object of resources
+	if body[0] == '{' {
 		return json.Unmarshal(body, dest)
 	}
 
@@ -459,7 +491,7 @@ func (c *Client) UpdateResource(ctx context.Context, resourceType string, item a
 	}
 
 	if len(rawItems) == 0 {
-		return fmt.Errorf("no resources returned from update")
+		return fmt.Errorf("no resources returned from API")
 	}
 
 	return json.Unmarshal(rawItems[0], dest)
@@ -487,21 +519,7 @@ func (c *Client) CreateResourceWithModule(ctx context.Context, module, resourceT
 		return err
 	}
 
-	// API returns an array or a single object of created resources
-	if len(body) > 0 && body[0] == '{' {
-		return json.Unmarshal(body, dest)
-	}
-
-	var rawItems []json.RawMessage
-	if err := json.Unmarshal(body, &rawItems); err != nil {
-		return err
-	}
-
-	if len(rawItems) == 0 {
-		return fmt.Errorf("no resources returned from creation")
-	}
-
-	return json.Unmarshal(rawItems[0], dest)
+	return c.unmarshalResourceResponse(ctx, module, resourceType, body, dest)
 }
 
 func (c *Client) UpdateResourceWithModule(ctx context.Context, module, resourceType string, item any, dest any) error {
@@ -517,21 +535,7 @@ func (c *Client) UpdateResourceWithModule(ctx context.Context, module, resourceT
 		return err
 	}
 
-	// API returns an array or a single object
-	if len(body) > 0 && body[0] == '{' {
-		return json.Unmarshal(body, dest)
-	}
-
-	var rawItems []json.RawMessage
-	if err := json.Unmarshal(body, &rawItems); err != nil {
-		return err
-	}
-
-	if len(rawItems) == 0 {
-		return fmt.Errorf("no resources returned from update")
-	}
-
-	return json.Unmarshal(rawItems[0], dest)
+	return c.unmarshalResourceResponse(ctx, module, resourceType, body, dest)
 }
 
 func (c *Client) DeleteResourceWithModule(ctx context.Context, module, resourceType, name, signature string) error {

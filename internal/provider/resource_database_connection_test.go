@@ -30,15 +30,6 @@ func TestAccDatabaseConnectionResource(t *testing.T) {
 					resource.TestCheckResourceAttr("ignition_database_connection.test", "connect_url", "jdbc:mariadb://localhost:3306/testdb"),
 				),
 			},
-			// ImportState testing
-			/*
-			{
-				ResourceName:            "ignition_database_connection.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"signature"},
-			},
-			*/
 			// Update and Read testing
 			{
 				Config: testAccDatabaseConnectionResourceConfig(rName, "MariaDB", "MYSQL", "jdbc:mariadb://localhost:3306/updated_db"),

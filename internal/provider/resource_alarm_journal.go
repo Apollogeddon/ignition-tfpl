@@ -6,7 +6,6 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -128,9 +127,10 @@ func (r *AlarmJournalResource) Configure(ctx context.Context, req resource.Confi
 
 	r.client = c
 	r.generic = GenericIgnitionResource[client.AlarmJournalConfig, AlarmJournalResourceModel]{
-		Client:     c,
-		Handler:    r,
-		CreateFunc: c.CreateAlarmJournal,
+		Client:       c,
+		Handler:      r,
+		ResourceType: "ignition/alarm-journal",
+		CreateFunc:   c.CreateAlarmJournal,
 		GetFunc:    c.GetAlarmJournal,
 		UpdateFunc: c.UpdateAlarmJournal,
 		DeleteFunc: c.DeleteAlarmJournal,
@@ -185,9 +185,12 @@ func (r *AlarmJournalResource) MapPlanToClient(ctx context.Context, model *Alarm
 	}, nil
 }
 
-func (r *AlarmJournalResource) MapClientToState(ctx context.Context, config *client.AlarmJournalConfig, model *AlarmJournalResourceModel) error {
-	model.Type = types.StringValue(config.Profile.Type)
+func (r *AlarmJournalResource) MapClientToState(ctx context.Context, name string, config *client.AlarmJournalConfig, model *AlarmJournalResourceModel) error {
+	model.Name = types.StringValue(name)
 	
+	if config.Profile.Type != "" {
+		model.Type = types.StringValue(config.Profile.Type)
+	}
 	// Reset specific fields
 	model.Datasource = types.StringNull()
 	model.TableName = types.StringNull()
@@ -233,5 +236,10 @@ func (r *AlarmJournalResource) Delete(ctx context.Context, req resource.DeleteRe
 }
 
 func (r *AlarmJournalResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &AlarmJournalResourceModel{
+		BaseResourceModel: BaseResourceModel{
+			Id:   types.StringValue(req.ID),
+			Name: types.StringValue(req.ID),
+		},
+	})...)
 }

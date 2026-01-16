@@ -127,6 +127,8 @@ func (r *DatabaseConnectionResource) Configure(ctx context.Context, req resource
 
 	r.Client = client
 	r.Handler = r
+	r.Module = "ignition"
+	r.ResourceType = "database-connection"
 	r.CreateFunc = client.CreateDatabaseConnection
 	r.GetFunc = client.GetDatabaseConnection
 	r.UpdateFunc = client.UpdateDatabaseConnection
@@ -158,13 +160,19 @@ func (r *DatabaseConnectionResource) MapPlanToClient(ctx context.Context, model 
 		config.Username = model.Username.ValueString()
 	}
 	if !model.Password.IsNull() {
-		config.Password = model.Password.ValueString()
+		encrypted, err := r.Client.EncryptSecret(ctx, model.Password.ValueString())
+		if err != nil {
+			return client.DatabaseConfig{}, err
+		}
+		config.Password = encrypted
 	}
 
 	return config, nil
 }
 
-func (r *DatabaseConnectionResource) MapClientToState(ctx context.Context, config *client.DatabaseConfig, model *DatabaseConnectionResourceModel) error {
+func (r *DatabaseConnectionResource) MapClientToState(ctx context.Context, name string, config *client.DatabaseConfig, model *DatabaseConnectionResourceModel) error {
+	model.Name = types.StringValue(name)
+
 	if config.Driver != "" {
 		model.Type = types.StringValue(config.Driver)
 	}
@@ -179,6 +187,9 @@ func (r *DatabaseConnectionResource) MapClientToState(ctx context.Context, confi
 	} else {
 		model.Username = types.StringNull()
 	}
+	// The Name is usually the ID, which is returned in the wrap but let's assume 
+	// it's consistent. However, the generic base handles Name.
+	// If the name is in the state, we keep it.
 	return nil
 }
 
@@ -208,6 +219,7 @@ func (r *DatabaseConnectionResource) Delete(ctx context.Context, req resource.De
 
 func (r *DatabaseConnectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.Set(ctx, &DatabaseConnectionResourceModel{
+		Id:   types.StringValue(req.ID),
 		Name: types.StringValue(req.ID),
 	})...)
 }

@@ -153,6 +153,8 @@ func (r *AlarmNotificationProfileResource) Configure(ctx context.Context, req re
 
 	r.Client = apiClient
 	r.Handler = r
+	r.Module = "com.inductiveautomation.alarm-notification"
+	r.ResourceType = "alarm-notification-profile"
 	r.CreateFunc = apiClient.CreateAlarmNotificationProfile
 	r.GetFunc = apiClient.GetAlarmNotificationProfile
 	r.UpdateFunc = apiClient.UpdateAlarmNotificationProfile
@@ -202,58 +204,71 @@ func (r *AlarmNotificationProfileResource) MapPlanToClient(ctx context.Context, 
 			emailSettings["username"] = model.EmailConfig.Username.ValueString()
 		}
 		if !model.EmailConfig.Password.IsNull() {
-			emailSettings["password"] = model.EmailConfig.Password.ValueString()
+			encrypted, err := r.Client.EncryptSecret(ctx, model.EmailConfig.Password.ValueString())
+			if err != nil {
+				return client.AlarmNotificationProfileConfig{}, err
+			}
+			emailSettings["password"] = encrypted
 		}
-		config.Settings = emailSettings
+		// In Ignition, these are nested under another "settings" key for this type
+		config.Settings["settings"] = emailSettings
 	}
 
 	return config, nil
 }
 
-func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context, config *client.AlarmNotificationProfileConfig, model *AlarmNotificationProfileResourceModel) error {
-	if config.Profile.Type == "EmailNotificationProfileType" && config.Settings != nil {
+func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context, name string, config *client.AlarmNotificationProfileConfig, model *AlarmNotificationProfileResourceModel) error {
+	model.Name = types.StringValue(name)
+
+	if config.Profile.Type == "EmailNotificationProfileType" {
 		model.Type = types.StringValue(config.Profile.Type)
-		settings := config.Settings
 		
 		if model.EmailConfig == nil {
 			model.EmailConfig = &AlarmNotificationProfileEmailModel{}
 		}
-		
-		if v, ok := settings["useSmtpProfile"].(bool); ok {
-			model.EmailConfig.UseSMTPProfile = types.BoolValue(v)
+
+		if config.Settings != nil {
+			settings := config.Settings
+			// Check for nested "settings" object
+			if s, ok := settings["settings"].(map[string]any); ok {
+				settings = s
+			}
+			
+			if v, ok := settings["useSmtpProfile"].(bool); ok {
+				model.EmailConfig.UseSMTPProfile = types.BoolValue(v)
+			}
+			
+			if v, ok := settings["emailProfile"].(string); ok && v != "" {
+				model.EmailConfig.EmailProfile = types.StringValue(v)
+			}
+			
+			if v, ok := settings["hostname"].(string); ok && v != "" {
+				model.EmailConfig.Hostname = types.StringValue(v)
+			}
+			
+			if v, ok := settings["port"].(float64); ok && v != 0 {
+				model.EmailConfig.Port = types.Int64Value(int64(v))
+			} else if v, ok := settings["port"].(int); ok && v != 0 {
+				model.EmailConfig.Port = types.Int64Value(int64(v))
+			}
+			
+			if v, ok := settings["sslEnabled"].(bool); ok {
+				model.EmailConfig.SSLEnabled = types.BoolValue(v)
+			} else {
+				model.EmailConfig.SSLEnabled = types.BoolValue(false)
+			}
+			
+			if v, ok := settings["username"].(string); ok && v != "" {
+				model.EmailConfig.Username = types.StringValue(v)
+			}
+		} else {
+			// Ensure SSL Enabled is at least known if we have an Email type
+			if model.EmailConfig.SSLEnabled.IsUnknown() {
+				model.EmailConfig.SSLEnabled = types.BoolValue(false)
+			}
 		}
-		
-		if v, ok := settings["emailProfile"].(string); ok && v != "" {
-			model.EmailConfig.EmailProfile = types.StringValue(v)
-		} else if model.EmailConfig.EmailProfile.IsNull() || model.EmailConfig.EmailProfile.IsUnknown() {
-			model.EmailConfig.EmailProfile = types.StringNull()
-		}
-		
-		if v, ok := settings["hostname"].(string); ok && v != "" {
-			model.EmailConfig.Hostname = types.StringValue(v)
-		} else if model.EmailConfig.Hostname.IsNull() || model.EmailConfig.Hostname.IsUnknown() {
-			model.EmailConfig.Hostname = types.StringNull()
-		}
-		
-		if v, ok := settings["port"].(float64); ok && v != 0 {
-			model.EmailConfig.Port = types.Int64Value(int64(v))
-		} else if v, ok := settings["port"].(int); ok && v != 0 {
-			model.EmailConfig.Port = types.Int64Value(int64(v))
-		} else if model.EmailConfig.Port.IsNull() || model.EmailConfig.Port.IsUnknown() {
-			model.EmailConfig.Port = types.Int64Null()
-		}
-		
-		if v, ok := settings["sslEnabled"].(bool); ok {
-			model.EmailConfig.SSLEnabled = types.BoolValue(v)
-		} else if model.EmailConfig.SSLEnabled.IsNull() || model.EmailConfig.SSLEnabled.IsUnknown() {
-			model.EmailConfig.SSLEnabled = types.BoolValue(false)
-		}
-		
-		if v, ok := settings["username"].(string); ok && v != "" {
-			model.EmailConfig.Username = types.StringValue(v)
-		} else if model.EmailConfig.Username.IsNull() || model.EmailConfig.Username.IsUnknown() {
-			model.EmailConfig.Username = types.StringNull()
-		}
+	} else if config.Profile.Type != "" {
+		model.Type = types.StringValue(config.Profile.Type)
 	}
 	return nil
 }
@@ -284,6 +299,7 @@ func (r *AlarmNotificationProfileResource) Delete(ctx context.Context, req resou
 
 func (r *AlarmNotificationProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.Set(ctx, &AlarmNotificationProfileResourceModel{
+		Id:   types.StringValue(req.ID),
 		Name: types.StringValue(req.ID),
 	})...)
 }

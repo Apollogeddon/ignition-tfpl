@@ -14,6 +14,9 @@ type MockClient struct {
 	UpdateResourceWithModuleFunc func(ctx context.Context, module, resourceType string, item any, dest any) error
 	DeleteResourceWithModuleFunc func(ctx context.Context, module, resourceType, name, signature string) error
 
+	// Secrets
+	EncryptSecretFunc func(ctx context.Context, plaintext string) (*IgnitionSecret, error)
+
 	// Projects
 	GetProjectFunc    func(ctx context.Context, name string) (*Project, error)
 	CreateProjectFunc func(ctx context.Context, p Project) (*Project, error)
@@ -143,6 +146,18 @@ func (m *MockClient) DeleteResourceWithModule(ctx context.Context, module, resou
 		return m.DeleteResourceWithModuleFunc(ctx, module, resourceType, name, signature)
 	}
 	return nil
+}
+
+// Secrets
+func (m *MockClient) EncryptSecret(ctx context.Context, plaintext string) (*IgnitionSecret, error) {
+	if m.EncryptSecretFunc != nil {
+		return m.EncryptSecretFunc(ctx, plaintext)
+	}
+	// Return a non-encrypted but valid structure for mock tests
+	return &IgnitionSecret{
+		Type: "Embedded",
+		Data: map[string]interface{}{"value": plaintext},
+	}, nil
 }
 
 // Projects

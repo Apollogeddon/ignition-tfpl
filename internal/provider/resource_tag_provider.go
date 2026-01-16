@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -23,7 +22,7 @@ func NewTagProviderResource() resource.Resource {
 
 // TagProviderResource defines the resource implementation.
 type TagProviderResource struct {
-	client client.IgnitionClient
+	generic GenericIgnitionResource[client.TagProviderConfig, TagProviderResourceModel]
 }
 
 // TagProviderResourceModel describes the resource data model.
@@ -77,7 +76,7 @@ func (r *TagProviderResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -86,114 +85,101 @@ func (r *TagProviderResource) Configure(ctx context.Context, req resource.Config
 		return
 	}
 
-	r.client = client
+	r.generic = GenericIgnitionResource[client.TagProviderConfig, TagProviderResourceModel]{
+		Client:       c,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "tag-provider",
+		CreateFunc:   c.CreateTagProvider,
+		GetFunc:      c.GetTagProvider,
+		UpdateFunc:   c.UpdateTagProvider,
+		DeleteFunc:   c.DeleteTagProvider,
+	}
+}
+
+func (r *TagProviderResource) MapPlanToClient(ctx context.Context, model *TagProviderResourceModel) (client.TagProviderConfig, error) {
+	return client.TagProviderConfig{
+		Type:        model.Type.ValueString(),
+		Description: model.Description.ValueString(),
+	}, nil
+}
+
+func (r *TagProviderResource) MapClientToState(ctx context.Context, name string, config *client.TagProviderConfig, model *TagProviderResourceModel) error {
+	model.Name = types.StringValue(name)
+	model.Type = types.StringValue(config.Type)
+	model.Description = stringToNullableString(config.Description)
+	return nil
 }
 
 func (r *TagProviderResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data TagProviderResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *TagProviderResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	config := client.TagProviderConfig{
-		Type: data.Type.ValueString(),
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *TagProviderResourceModel) {
+		m.Name = b.Name
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	if !data.Description.IsNull() {
-		config.Description = data.Description.ValueString()
-	}
-
-	res := client.ResourceResponse[client.TagProviderConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: boolPtr(true),
-		Config:  config,
-	}
-
-	created, err := r.client.CreateTagProvider(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating tag provider", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	data.Name = types.StringValue(created.Name)
-	data.Type = types.StringValue(created.Config.Type)
-	data.Description = stringToNullableString(created.Config.Description)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *TagProviderResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data TagProviderResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *TagProviderResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	res, err := r.client.GetTagProvider(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading tag provider", err.Error())
-		return
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *TagProviderResourceModel) {
+		m.Name = b.Name
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Name = types.StringValue(res.Name)
-	data.Type = types.StringValue(res.Config.Type)
-	data.Description = stringToNullableString(res.Config.Description)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *TagProviderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data TagProviderResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *TagProviderResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	config := client.TagProviderConfig{
-		Type: data.Type.ValueString(),
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *TagProviderResourceModel) {
+		m.Name = b.Name
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	if !data.Description.IsNull() {
-		config.Description = data.Description.ValueString()
-	}
-
-	res := client.ResourceResponse[client.TagProviderConfig]{
-		Name:      data.Name.ValueString(),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	updated, err := r.client.UpdateTagProvider(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating tag provider", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	data.Description = stringToNullableString(updated.Config.Description)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *TagProviderResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data TagProviderResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *TagProviderResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	err := r.client.DeleteTagProvider(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting tag provider", err.Error())
-		return
-	}
+	r.generic.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *TagProviderResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &TagProviderResourceModel{
+		Id:   types.StringValue(req.ID),
+		Name: types.StringValue(req.ID),
+	})...)
 }

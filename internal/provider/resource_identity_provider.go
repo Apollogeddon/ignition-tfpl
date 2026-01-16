@@ -7,7 +7,6 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -252,9 +251,10 @@ func (r *IdentityProviderResource) Configure(ctx context.Context, req resource.C
 
 	r.client = c
 	r.generic = GenericIgnitionResource[client.IdentityProviderConfig, IdentityProviderResourceModel]{
-		Client:     c,
-		Handler:    r,
-		CreateFunc: c.CreateIdentityProvider,
+		Client:       c,
+		Handler:      r,
+		ResourceType: "ignition/identity-provider",
+		CreateFunc:   c.CreateIdentityProvider,
 		GetFunc:    c.GetIdentityProvider,
 		UpdateFunc: c.UpdateIdentityProvider,
 		DeleteFunc: c.DeleteIdentityProvider,
@@ -292,10 +292,11 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 		}
 
 		if !model.ClientSecret.IsNull() {
-			oidcConfig.ClientSecret = &client.IgnitionSecret{
-				Type: "Embedded",
-				Data: model.ClientSecret.ValueString(),
+			encrypted, err := r.client.EncryptSecret(ctx, model.ClientSecret.ValueString())
+			if err != nil {
+				return client.IdentityProviderConfig{}, err
 			}
+			oidcConfig.ClientSecret = encrypted
 		}
 
 		return client.IdentityProviderConfig{
@@ -332,7 +333,8 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 	return client.IdentityProviderConfig{}, fmt.Errorf("unsupported identity provider type: %s", model.Type.ValueString())
 }
 
-func (r *IdentityProviderResource) MapClientToState(ctx context.Context, config *client.IdentityProviderConfig, model *IdentityProviderResourceModel) error {
+func (r *IdentityProviderResource) MapClientToState(ctx context.Context, name string, config *client.IdentityProviderConfig, model *IdentityProviderResourceModel) error {
+	model.Name = types.StringValue(name)
 	model.Type = types.StringValue(config.Type)
 
 	configBytes, _ := json.Marshal(config.Config)
@@ -402,5 +404,10 @@ func (r *IdentityProviderResource) Delete(ctx context.Context, req resource.Dele
 }
 
 func (r *IdentityProviderResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &IdentityProviderResourceModel{
+		BaseResourceModel: BaseResourceModel{
+			Id:   types.StringValue(req.ID),
+			Name: types.StringValue(req.ID),
+		},
+	})...)
 }

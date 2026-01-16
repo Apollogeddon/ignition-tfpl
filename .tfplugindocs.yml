@@ -1,1 +1,6 @@
-provider-name: ignition
+website:
+  # The name of the provider. This is used to build the page title and the side navigation.
+  provider_name: "ignition"
+  # The name of the sub-directory where the generated documentation will be created.
+  # This is used to build the URL paths.
+  path: "docs"

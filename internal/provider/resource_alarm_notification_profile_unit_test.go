@@ -13,6 +13,7 @@ import (
 
 func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 	currentHostname := "mock.smtp.com"
+	currentSignature := "mock-signature-123"
 
 	mockClient := &client.MockClient{
 		CreateAlarmNotificationProfileFunc: func(ctx context.Context, anp client.ResourceResponse[client.AlarmNotificationProfileConfig]) (*client.ResourceResponse[client.AlarmNotificationProfileConfig], error) {
@@ -34,13 +35,14 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 			return &client.ResourceResponse[client.AlarmNotificationProfileConfig]{
 				Name:      "unit-test-profile",
 				Enabled:   boolPtr(true),
-				Signature: "mock-signature-123",
+				Signature: currentSignature,
 				Config: client.AlarmNotificationProfileConfig{
 					Profile: client.AlarmNotificationProfileProfile{Type: "EmailNotificationProfileType"},
 					Settings: map[string]any{
 						"useSmtpProfile": false,
 						"hostname":       currentHostname,
 						"port":           25,
+						"sslEnabled":     false,
 					},
 				},
 			}, nil
@@ -49,12 +51,18 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 			if anp.Name != "unit-test-profile" {
 				return nil, fmt.Errorf("expected name 'unit-test-profile', got '%s'", anp.Name)
 			}
+			
+			// In Ignition, settings for Email type are often nested
 			settings := anp.Config.Settings
+			if s, ok := settings["settings"].(map[string]any); ok {
+				settings = s
+			}
 			
 			if v, ok := settings["hostname"].(string); ok {
 				currentHostname = v
 			}
-			anp.Signature = "mock-signature-456" // New signature on update
+			currentSignature = "mock-signature-456" // Update current signature
+			anp.Signature = currentSignature
 			return &anp, nil
 		},
 		DeleteAlarmNotificationProfileFunc: func(ctx context.Context, name, signature string) error {

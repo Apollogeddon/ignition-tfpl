@@ -114,6 +114,8 @@ func (r *UserSourceResource) Configure(ctx context.Context, req resource.Configu
 
 	r.Client = client
 	r.Handler = r
+	r.Module = "ignition"
+	r.ResourceType = "user-source"
 	r.CreateFunc = client.CreateUserSource
 	r.GetFunc = client.GetUserSource
 	r.UpdateFunc = client.UpdateUserSource
@@ -154,7 +156,8 @@ func (r *UserSourceResource) MapPlanToClient(ctx context.Context, model *UserSou
 	}, nil
 }
 
-func (r *UserSourceResource) MapClientToState(ctx context.Context, config *client.UserSourceConfig, model *UserSourceResourceModel) error {
+func (r *UserSourceResource) MapClientToState(ctx context.Context, name string, config *client.UserSourceConfig, model *UserSourceResourceModel) error {
+	model.Name = types.StringValue(name)
 	if config.Profile.Type != "" {
 		model.Type = types.StringValue(config.Profile.Type)
 	}
@@ -200,6 +203,7 @@ func (r *UserSourceResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func (r *UserSourceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.Set(ctx, &UserSourceResourceModel{
+		Id:   types.StringValue(req.ID),
 		Name: types.StringValue(req.ID),
 	})...)
 }

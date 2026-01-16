@@ -31,6 +31,7 @@ resource "ignition_user_source" "example" {
 ### Optional
 
 - `description` (String) A description of the user source.
+- `enabled` (Boolean) Whether the user source is enabled.
 - `failover_mode` (String) The failover mode to use if a failover source is set. Hard - failover only if this source is unreachable. Soft - try the failover source when a user fails to authenticate with this source.
 - `failover_profile` (String) If this source is unreachable for authentication, this failover source will be used instead.
 - `schedule_restricted` (Boolean) Users are only able to log in when their assigned schedule is active.

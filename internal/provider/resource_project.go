@@ -119,8 +119,8 @@ func (r *ProjectResource) Configure(ctx context.Context, req resource.ConfigureR
 
 	r.Client = apiClient
 	r.Handler = r
-	
-	// Wrap project methods to match ResourceResponse pattern
+	r.Module = "ignition"
+	r.ResourceType = "project"
 	r.CreateFunc = func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
 		p, err := apiClient.CreateProject(ctx, res.Config)
 		if err != nil {
@@ -207,7 +207,8 @@ func (r *ProjectResource) MapPlanToClient(ctx context.Context, model *ProjectRes
 	return p, nil
 }
 
-func (r *ProjectResource) MapClientToState(ctx context.Context, p *client.Project, model *ProjectResourceModel) error {
+func (r *ProjectResource) MapClientToState(ctx context.Context, name string, p *client.Project, model *ProjectResourceModel) error {
+	model.Name = types.StringValue(name)
 	model.Description = stringToNullableString(p.Description)
 	model.Title = stringToNullableString(p.Title)
 	model.Enabled = types.BoolValue(p.Enabled)
@@ -246,6 +247,7 @@ func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resp.Diagnostics.Append(resp.State.Set(ctx, &ProjectResourceModel{
+		Id:   types.StringValue(req.ID),
 		Name: types.StringValue(req.ID),
 	})...)
 }

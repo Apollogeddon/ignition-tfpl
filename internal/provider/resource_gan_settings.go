@@ -135,18 +135,16 @@ func (r *GanGeneralSettingsResource) Configure(ctx context.Context, req resource
 
 	r.client = c
 	r.generic = GenericIgnitionResource[client.GanGeneralSettingsConfig, GanGeneralSettingsResourceModel]{
-		Client:     c,
-		Handler:    r,
-		CreateFunc: func(ctx context.Context, item client.ResourceResponse[client.GanGeneralSettingsConfig]) (*client.ResourceResponse[client.GanGeneralSettingsConfig], error) {
-			// Singleton creation is just an update
-			return c.UpdateGanGeneralSettings(ctx, item)
-		},
+		Client:       c,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "gateway-network-settings",
+		CreateFunc:   c.UpdateGanGeneralSettings,
 		GetFunc: func(ctx context.Context, _ string) (*client.ResourceResponse[client.GanGeneralSettingsConfig], error) {
 			return c.GetGanGeneralSettings(ctx)
 		},
 		UpdateFunc: c.UpdateGanGeneralSettings,
-		DeleteFunc: func(ctx context.Context, _, _ string) error {
-			// No-op for singleton
+		DeleteFunc: func(ctx context.Context, name, signature string) error {
 			return nil
 		},
 	}
@@ -165,7 +163,8 @@ func (r *GanGeneralSettingsResource) MapPlanToClient(ctx context.Context, model 
 	}, nil
 }
 
-func (r *GanGeneralSettingsResource) MapClientToState(ctx context.Context, config *client.GanGeneralSettingsConfig, model *GanGeneralSettingsResourceModel) error {
+func (r *GanGeneralSettingsResource) MapClientToState(ctx context.Context, name string, config *client.GanGeneralSettingsConfig, model *GanGeneralSettingsResourceModel) error {
+	model.Name = types.StringValue(name)
 	model.RequireSSL = types.BoolValue(config.RequireSSL)
 	model.RequireTwoWayAuth = types.BoolValue(config.RequireTwoWayAuth)
 	model.AllowIncoming = types.BoolValue(config.AllowIncoming)

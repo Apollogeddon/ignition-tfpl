@@ -6,7 +6,6 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -187,9 +186,11 @@ func (r *StoreAndForwardResource) Configure(ctx context.Context, req resource.Co
 
 	r.client = c
 	r.generic = GenericIgnitionResource[client.StoreAndForwardConfig, StoreAndForwardResourceModel]{
-		Client:     c,
-		Handler:    r,
-		CreateFunc: c.CreateStoreAndForward,
+		Client:       c,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "store-and-forward-engine",
+		CreateFunc:   c.CreateStoreAndForward,
 		GetFunc:    c.GetStoreAndForward,
 		UpdateFunc: c.UpdateStoreAndForward,
 		DeleteFunc: c.DeleteStoreAndForward,
@@ -227,8 +228,8 @@ func (r *StoreAndForwardResource) MapPlanToClient(ctx context.Context, model *St
 	return config, nil
 }
 
-func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, config *client.StoreAndForwardConfig, model *StoreAndForwardResourceModel) error {
-	model.TimeThresholdMs = types.Int64Value(int64(config.TimeThresholdMs))
+func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, name string, config *client.StoreAndForwardConfig, model *StoreAndForwardResourceModel) error {
+	model.Name = types.StringValue(name)
 	model.ForwardRateMs = types.Int64Value(int64(config.ForwardRateMs))
 	model.ForwardingPolicy = types.StringValue(config.ForwardingPolicy)
 	model.ForwardingSchedule = stringToNullableString(config.ForwardingSchedule)
@@ -280,9 +281,12 @@ func (r *StoreAndForwardResource) Delete(ctx context.Context, req resource.Delet
 }
 
 func (r *StoreAndForwardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
-
+	resp.Diagnostics.Append(resp.State.Set(ctx, &StoreAndForwardResourceModel{
+		BaseResourceModel: BaseResourceModel{
+			Id:   types.StringValue(req.ID),
+			Name: types.StringValue(req.ID),
+		},
+	})...)
 }
 
 

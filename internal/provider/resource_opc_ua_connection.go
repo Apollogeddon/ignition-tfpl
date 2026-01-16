@@ -6,7 +6,6 @@ import (
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -26,7 +25,7 @@ func NewOpcUaConnectionResource() resource.Resource {
 
 // OpcUaConnectionResource defines the resource implementation.
 type OpcUaConnectionResource struct {
-	client client.IgnitionClient
+	generic GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]
 }
 
 // OpcUaConnectionResourceModel describes the resource data model.
@@ -126,7 +125,7 @@ func (r *OpcUaConnectionResource) Configure(ctx context.Context, req resource.Co
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -135,191 +134,125 @@ func (r *OpcUaConnectionResource) Configure(ctx context.Context, req resource.Co
 		return
 	}
 
-	r.client = client
+	r.generic = GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]{
+		Client:       c,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "opc-connection",
+		CreateFunc:   c.CreateOpcUaConnection,
+		GetFunc:      c.GetOpcUaConnection,
+		UpdateFunc:   c.UpdateOpcUaConnection,
+		DeleteFunc:   c.DeleteOpcUaConnection,
+	}
+}
+
+func (r *OpcUaConnectionResource) MapPlanToClient(ctx context.Context, model *OpcUaConnectionResourceModel) (client.OpcUaConnectionConfig, error) {
+	profileType := "com.inductiveautomation.OpcUaServerType"
+	if !model.Type.IsNull() {
+		profileType = model.Type.ValueString()
+	}
+
+	return client.OpcUaConnectionConfig{
+		Profile: client.OpcUaConnectionProfile{
+			Type: profileType,
+		},
+		Settings: client.OpcUaConnectionSettings{
+			Endpoint: client.OpcUaConnectionEndpoint{
+				DiscoveryURL:   model.DiscoveryURL.ValueString(),
+				EndpointURL:    model.EndpointURL.ValueString(),
+				SecurityPolicy: model.SecurityPolicy.ValueString(),
+				SecurityMode:   model.SecurityMode.ValueString(),
+			},
+		},
+	}, nil
+}
+
+func (r *OpcUaConnectionResource) MapClientToState(ctx context.Context, name string, config *client.OpcUaConnectionConfig, model *OpcUaConnectionResourceModel) error {
+	model.Name = types.StringValue(name)
+	model.Type = types.StringValue(config.Profile.Type)
+	model.DiscoveryURL = types.StringValue(config.Settings.Endpoint.DiscoveryURL)
+	model.EndpointURL = types.StringValue(config.Settings.Endpoint.EndpointURL)
+	model.SecurityPolicy = types.StringValue(config.Settings.Endpoint.SecurityPolicy)
+	model.SecurityMode = types.StringValue(config.Settings.Endpoint.SecurityMode)
+	return nil
 }
 
 func (r *OpcUaConnectionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data OpcUaConnectionResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *OpcUaConnectionResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	// Default type if not set
-	profileType := "com.inductiveautomation.OpcUaServerType"
-	if !data.Type.IsNull() {
-		profileType = data.Type.ValueString()
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *OpcUaConnectionResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	config := client.OpcUaConnectionConfig{
-		Profile: client.OpcUaConnectionProfile{
-			Type: profileType,
-		},
-		Settings: client.OpcUaConnectionSettings{
-			Endpoint: client.OpcUaConnectionEndpoint{
-				DiscoveryURL:   data.DiscoveryURL.ValueString(),
-				EndpointURL:    data.EndpointURL.ValueString(),
-				SecurityPolicy: data.SecurityPolicy.ValueString(),
-				SecurityMode:   data.SecurityMode.ValueString(),
-			},
-		},
-	}
-
-	res := client.ResourceResponse[client.OpcUaConnectionConfig]{
-		Name:    data.Name.ValueString(),
-		Enabled: boolPtr(data.Enabled.ValueBool()),
-		Config:  config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	created, err := r.client.CreateOpcUaConnection(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error creating OPC UA connection", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(created.Signature)
-	data.Id = types.StringValue(created.Name)
-	data.Name = types.StringValue(created.Name)
-	if created.Enabled != nil {
-		data.Enabled = types.BoolValue(*created.Enabled)
-	} else {
-		data.Enabled = types.BoolValue(true)
-	}
-	
-	if created.Description != "" {
-		data.Description = types.StringValue(created.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-
-	data.Type = types.StringValue(created.Config.Profile.Type)
-	data.DiscoveryURL = types.StringValue(created.Config.Settings.Endpoint.DiscoveryURL)
-	data.EndpointURL = types.StringValue(created.Config.Settings.Endpoint.EndpointURL)
-	data.SecurityPolicy = types.StringValue(created.Config.Settings.Endpoint.SecurityPolicy)
-	data.SecurityMode = types.StringValue(created.Config.Settings.Endpoint.SecurityMode)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &base)
 }
 
 func (r *OpcUaConnectionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data OpcUaConnectionResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *OpcUaConnectionResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	res, err := r.client.GetOpcUaConnection(ctx, data.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading OPC UA connection", err.Error())
-		return
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *OpcUaConnectionResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	data.Signature = types.StringValue(res.Signature)
-	data.Id = types.StringValue(res.Name)
-	data.Name = types.StringValue(res.Name)
-	if res.Enabled != nil {
-		data.Enabled = types.BoolValue(*res.Enabled)
-	} else {
-		data.Enabled = types.BoolValue(true)
-	}
-	
-	if res.Description != "" {
-		data.Description = types.StringValue(res.Description)
-	} else {
-		data.Description = types.StringNull()
-	}
-
-	data.Type = types.StringValue(res.Config.Profile.Type)
-	data.DiscoveryURL = types.StringValue(res.Config.Settings.Endpoint.DiscoveryURL)
-	data.EndpointURL = types.StringValue(res.Config.Settings.Endpoint.EndpointURL)
-	data.SecurityPolicy = types.StringValue(res.Config.Settings.Endpoint.SecurityPolicy)
-	data.SecurityMode = types.StringValue(res.Config.Settings.Endpoint.SecurityMode)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &base)
 }
 
 func (r *OpcUaConnectionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data OpcUaConnectionResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *OpcUaConnectionResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	// Default type if not set
-	profileType := "com.inductiveautomation.OpcUaServerType"
-	if !data.Type.IsNull() {
-		profileType = data.Type.ValueString()
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *OpcUaConnectionResourceModel) {
+		m.Name = b.Name
+		m.Enabled = b.Enabled
+		m.Description = b.Description
+		m.Signature = b.Signature
+		m.Id = b.Id
 	}
-
-	config := client.OpcUaConnectionConfig{
-		Profile: client.OpcUaConnectionProfile{
-			Type: profileType,
-		},
-		Settings: client.OpcUaConnectionSettings{
-			Endpoint: client.OpcUaConnectionEndpoint{
-				DiscoveryURL:   data.DiscoveryURL.ValueString(),
-				EndpointURL:    data.EndpointURL.ValueString(),
-				SecurityPolicy: data.SecurityPolicy.ValueString(),
-				SecurityMode:   data.SecurityMode.ValueString(),
-			},
-		},
-	}
-
-	res := client.ResourceResponse[client.OpcUaConnectionConfig]{
-		Name:      data.Name.ValueString(),
-		Enabled:   boolPtr(data.Enabled.ValueBool()),
-		Signature: data.Signature.ValueString(),
-		Config:    config,
-	}
-
-	if !data.Description.IsNull() {
-		res.Description = data.Description.ValueString()
-	}
-
-	updated, err := r.client.UpdateOpcUaConnection(ctx, res)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating OPC UA connection", err.Error())
-		return
-	}
-
-	data.Signature = types.StringValue(updated.Signature)
-	data.Type = types.StringValue(updated.Config.Profile.Type)
-	data.DiscoveryURL = types.StringValue(updated.Config.Settings.Endpoint.DiscoveryURL)
-	data.EndpointURL = types.StringValue(updated.Config.Settings.Endpoint.EndpointURL)
-	data.SecurityPolicy = types.StringValue(updated.Config.Settings.Endpoint.SecurityPolicy)
-	data.SecurityMode = types.StringValue(updated.Config.Settings.Endpoint.SecurityMode)
-	
-	if updated.Description != "" {
-		data.Description = types.StringValue(updated.Description)
-	}
-
-	if updated.Enabled != nil {
-		data.Enabled = types.BoolValue(*updated.Enabled)
-	} else {
-		data.Enabled = types.BoolValue(true)
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &base)
 }
 
 func (r *OpcUaConnectionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data OpcUaConnectionResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	var base BaseResourceModel
+	r.generic.PopulateBase = func(m *OpcUaConnectionResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Enabled = m.Enabled
+		b.Description = m.Description
+		b.Signature = m.Signature
+		b.Id = m.Id
 	}
-
-	err := r.client.DeleteOpcUaConnection(ctx, data.Name.ValueString(), data.Signature.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Error deleting OPC UA connection", err.Error())
-		return
-	}
+	r.generic.Delete(ctx, req, resp, &data, &base)
 }
 
 func (r *OpcUaConnectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &OpcUaConnectionResourceModel{
+		Id:   types.StringValue(req.ID),
+		Name: types.StringValue(req.ID),
+	})...)
 }

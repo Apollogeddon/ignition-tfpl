@@ -18,6 +18,8 @@ var (
 	version string = "dev"
 )
 
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name ignition
+
 func main() {
 	var debug bool
 

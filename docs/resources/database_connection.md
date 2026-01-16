@@ -34,6 +34,8 @@ resource "ignition_database_connection" "example" {
 
 ### Optional
 
+- `description` (String) The description of the database connection.
+- `enabled` (Boolean) Whether the database connection is enabled.
 - `password` (String, Sensitive) The password for the database connection.
 - `username` (String) The username for the database connection.
 

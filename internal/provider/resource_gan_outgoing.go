@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -157,9 +156,11 @@ func (r *GanOutgoingResource) Configure(ctx context.Context, req resource.Config
 
 	r.client = c
 	r.generic = GenericIgnitionResource[client.GanOutgoingConfig, GanOutgoingResourceModel]{
-		Client:     c,
-		Handler:    r,
-		CreateFunc: c.CreateGanOutgoing,
+		Client:       c,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "gateway-network-outgoing",
+		CreateFunc:   c.CreateGanOutgoing,
 		GetFunc:    c.GetGanOutgoing,
 		UpdateFunc: c.UpdateGanOutgoing,
 		DeleteFunc: c.DeleteGanOutgoing,
@@ -182,7 +183,8 @@ func (r *GanOutgoingResource) MapPlanToClient(ctx context.Context, model *GanOut
 	}, nil
 }
 
-func (r *GanOutgoingResource) MapClientToState(ctx context.Context, config *client.GanOutgoingConfig, model *GanOutgoingResourceModel) error {
+func (r *GanOutgoingResource) MapClientToState(ctx context.Context, name string, config *client.GanOutgoingConfig, model *GanOutgoingResourceModel) error {
+	model.Name = types.StringValue(name)
 	model.Host = types.StringValue(config.Host)
 	model.Port = types.Int64Value(int64(config.Port))
 	model.UseSSL = types.BoolValue(config.UseSSL)
@@ -218,5 +220,10 @@ func (r *GanOutgoingResource) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (r *GanOutgoingResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &GanOutgoingResourceModel{
+		BaseResourceModel: BaseResourceModel{
+			Id:   types.StringValue(req.ID),
+			Name: types.StringValue(req.ID),
+		},
+	})...)
 }

@@ -64,6 +64,7 @@ resource "ignition_alarm_notification_profile" "test" {
     use_smtp_profile = false
     hostname         = %[3]q
     port             = %[4]d
+    ssl_enabled      = false
     username         = "user"
     password         = "pass"
   }

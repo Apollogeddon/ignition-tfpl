@@ -22,13 +22,15 @@ type IgnitionResourceHandler[T any, M any] interface {
 	// MapPlanToClient converts the Terraform model (plus plan data) to the API config struct
 	MapPlanToClient(ctx context.Context, model *M) (T, error)
 	// MapClientToState updates the Terraform model from the API response
-	MapClientToState(ctx context.Context, config *T, model *M) error
+	MapClientToState(ctx context.Context, name string, config *T, model *M) error
 }
 
 // GenericIgnitionResource implements the core CRUD logic
 type GenericIgnitionResource[T any, M any] struct {
-	Client  client.IgnitionClient
-	Handler IgnitionResourceHandler[T, M]
+	Client       client.IgnitionClient
+	Handler      IgnitionResourceHandler[T, M]
+	Module       string
+	ResourceType string
 	
 	// API Methods
 	CreateFunc func(context.Context, client.ResourceResponse[T]) (*client.ResourceResponse[T], error)
@@ -59,9 +61,11 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 	}
 
 	res := client.ResourceResponse[T]{
-		Name:    base.Name.ValueString(),
-		Enabled: boolPtr(base.Enabled.ValueBool()),
-		Config:  config,
+		Module:       r.Module,
+		Type:        r.ResourceType,
+		Name:         base.Name.ValueString(),
+		Enabled:      boolPtr(base.Enabled.ValueBool()),
+		Config:       config,
 	}
 
 	if !base.Description.IsNull() {
@@ -76,6 +80,9 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 
 	base.Signature = types.StringValue(created.Signature)
 	base.Id = types.StringValue(created.Name)
+	if base.Name.IsNull() || base.Name.IsUnknown() || base.Name.ValueString() == "" {
+		base.Name = types.StringValue(created.Name)
+	}
 	if created.Enabled != nil {
 		base.Enabled = types.BoolValue(*created.Enabled)
 	} else {
@@ -87,13 +94,13 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 		base.Description = types.StringNull()
 	}
 	
-	if err := r.Handler.MapClientToState(ctx, &created.Config, data); err != nil {
-		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
-		return
-	}
-
 	if r.PopulateModel != nil {
 		r.PopulateModel(base, data)
+	}
+
+	if err := r.Handler.MapClientToState(ctx, created.Name, &created.Config, data); err != nil {
+		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -109,6 +116,10 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 		r.PopulateBase(data, base)
 	}
 
+	if base.Name.ValueString() == "" {
+		return
+	}
+
 	res, err := r.GetFunc(ctx, base.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading resource", err.Error())
@@ -117,6 +128,9 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 
 	base.Signature = types.StringValue(res.Signature)
 	base.Id = types.StringValue(res.Name)
+	if base.Name.IsNull() || base.Name.IsUnknown() || base.Name.ValueString() == "" {
+		base.Name = types.StringValue(res.Name)
+	}
 	if res.Enabled != nil {
 		base.Enabled = types.BoolValue(*res.Enabled)
 	} else {
@@ -129,13 +143,13 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 		base.Description = types.StringNull()
 	}
 
-	if err := r.Handler.MapClientToState(ctx, &res.Config, data); err != nil {
-		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
-		return
-	}
-
 	if r.PopulateModel != nil {
 		r.PopulateModel(base, data)
+	}
+
+	if err := r.Handler.MapClientToState(ctx, res.Name, &res.Config, data); err != nil {
+		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
@@ -166,10 +180,12 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 	}
 
 	res := client.ResourceResponse[T]{
-		Name:      base.Name.ValueString(),
-		Enabled:   boolPtr(base.Enabled.ValueBool()),
-		Signature: stateBase.Signature.ValueString(),
-		Config:    config,
+		Module:       r.Module,
+		Type:        r.ResourceType,
+		Name:         base.Name.ValueString(),
+		Enabled:      boolPtr(base.Enabled.ValueBool()),
+		Signature:    stateBase.Signature.ValueString(),
+		Config:       config,
 	}
 
 	if !base.Description.IsNull() {
@@ -197,6 +213,11 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 		}
 	}
 
+	base.Id = types.StringValue(updated.Name)
+	if base.Name.IsNull() || base.Name.IsUnknown() || base.Name.ValueString() == "" {
+		base.Name = types.StringValue(updated.Name)
+	}
+
 	if updated.Enabled != nil {
 		base.Enabled = types.BoolValue(*updated.Enabled)
 	} else {
@@ -208,13 +229,13 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 		base.Description = types.StringNull()
 	}
 	
-	if err := r.Handler.MapClientToState(ctx, &updated.Config, data); err != nil {
-		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
-		return
-	}
-
 	if r.PopulateModel != nil {
 		r.PopulateModel(base, data)
+	}
+
+	if err := r.Handler.MapClientToState(ctx, updated.Name, &updated.Config, data); err != nil {
+		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
