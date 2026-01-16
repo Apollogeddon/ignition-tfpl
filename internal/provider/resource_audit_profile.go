@@ -209,13 +209,8 @@ func (r *AuditProfileResource) MapPlanToClient(ctx context.Context, model *Audit
 func (r *AuditProfileResource) MapClientToState(ctx context.Context, name string, config *client.AuditProfileConfig, model *AuditProfileResourceModel) error {
 	model.Name = types.StringValue(name)
 	
-	if config.Profile.Type != "" {
-		model.Type = types.StringValue(config.Profile.Type)
-	}
-	
-	if config.Profile.RetentionDays != 0 {
-		model.RetentionDays = types.Int64Value(int64(config.Profile.RetentionDays))
-	}
+	model.Type = types.StringValue(config.Profile.Type)
+	model.RetentionDays = types.Int64Value(int64(config.Profile.RetentionDays))
 	
 	if config.Settings.DatabaseName != "" {
 		model.Database = types.StringValue(config.Settings.DatabaseName)

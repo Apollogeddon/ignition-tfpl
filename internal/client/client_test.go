@@ -267,6 +267,201 @@ func TestClient_APIError(t *testing.T) {
 	}
 }
 
+func TestClient_DatabaseConnectionOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []ResourceResponse[DatabaseConfig]{
+			{
+				Name:      "test-db",
+				Signature: "sig-db",
+				Config:    DatabaseConfig{Driver: "MariaDB"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	db := ResourceResponse[DatabaseConfig]{Name: "test-db", Config: DatabaseConfig{Driver: "MariaDB"}}
+	
+	_, err := c.CreateDatabaseConnection(context.Background(), db)
+	if err != nil {
+		t.Errorf("CreateDatabaseConnection failed: %v", err)
+	}
+
+	_, err = c.UpdateDatabaseConnection(context.Background(), db)
+	if err != nil {
+		t.Errorf("UpdateDatabaseConnection failed: %v", err)
+	}
+}
+
+func TestClient_UserSourceOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []ResourceResponse[UserSourceConfig]{
+			{
+				Name:      "test-us",
+				Signature: "sig-us",
+				Config:    UserSourceConfig{Profile: UserSourceProfile{Type: "internal"}},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	us := ResourceResponse[UserSourceConfig]{Name: "test-us", Config: UserSourceConfig{Profile: UserSourceProfile{Type: "internal"}}}
+	
+	_, err := c.CreateUserSource(context.Background(), us)
+	if err != nil {
+		t.Errorf("CreateUserSource failed: %v", err)
+	}
+
+	_, err = c.UpdateUserSource(context.Background(), us)
+	if err != nil {
+		t.Errorf("UpdateUserSource failed: %v", err)
+	}
+}
+
+func TestClient_TagProviderOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []ResourceResponse[TagProviderConfig]{
+			{
+				Name:      "test-tp",
+				Signature: "sig-tp",
+				Config:    TagProviderConfig{Type: "standard"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Type: "standard"}}
+	
+	_, err := c.CreateTagProvider(context.Background(), tp)
+	if err != nil {
+		t.Errorf("CreateTagProvider failed: %v", err)
+	}
+
+	_, err = c.UpdateTagProvider(context.Background(), tp)
+	if err != nil {
+		t.Errorf("UpdateTagProvider failed: %v", err)
+	}
+}
+
+func TestClient_AuditProfileOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := []ResourceResponse[AuditProfileConfig]{
+			{
+				Name:      "test-ap",
+				Signature: "sig-ap",
+				Config:    AuditProfileConfig{Profile: AuditProfileProfile{Type: "database"}},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	ap := ResourceResponse[AuditProfileConfig]{Name: "test-ap", Config: AuditProfileConfig{Profile: AuditProfileProfile{Type: "database"}}}
+	
+	_, err := c.CreateAuditProfile(context.Background(), ap)
+	if err != nil {
+		t.Errorf("CreateAuditProfile failed: %v", err)
+	}
+
+	_, err = c.UpdateAuditProfile(context.Background(), ap)
+	if err != nil {
+		t.Errorf("UpdateAuditProfile failed: %v", err)
+	}
+}
+
+func TestClient_ModuleResourceOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Just return a generic success for these module-based calls
+		response := []ResourceResponse[map[string]any]{
+			{
+				Name:      "test-res",
+				Signature: "sig-mod",
+				Config:    map[string]any{},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	
+	anp := ResourceResponse[AlarmNotificationProfileConfig]{Name: "anp"}
+	_, err := c.CreateAlarmNotificationProfile(context.Background(), anp)
+	if err != nil {
+		t.Errorf("CreateAlarmNotificationProfile failed: %v", err)
+	}
+
+	opc := ResourceResponse[OpcUaConnectionConfig]{Name: "opc"}
+	_, err = c.CreateOpcUaConnection(context.Background(), opc)
+	if err != nil {
+		t.Errorf("CreateOpcUaConnection failed: %v", err)
+	}
+
+	dev := ResourceResponse[DeviceConfig]{Name: "dev"}
+	_, err = c.CreateDevice(context.Background(), dev)
+	if err != nil {
+		t.Errorf("CreateDevice failed: %v", err)
+	}
+}
+
+func TestClient_RedundancyOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			json.NewEncoder(w).Encode(RedundancyConfig{Role: "Independent"})
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	
+	config, err := c.GetRedundancyConfig(context.Background())
+	if err != nil {
+		t.Errorf("GetRedundancyConfig failed: %v", err)
+	}
+	if config.Role != "Independent" {
+		t.Errorf("Expected Role Independent, got %s", config.Role)
+	}
+
+	err = c.UpdateRedundancyConfig(context.Background(), *config)
+	if err != nil {
+		t.Errorf("UpdateRedundancyConfig failed: %v", err)
+	}
+}
+
+func TestClient_EncryptSecret(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "text/plain" {
+			t.Errorf("Expected Content-Type text/plain, got %s", r.Header.Get("Content-Type"))
+		}
+		
+		response := map[string]interface{}{"jwe": "mock-jwe"}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	
+	secret, err := c.EncryptSecret(context.Background(), "my-password")
+	if err != nil {
+		t.Errorf("EncryptSecret failed: %v", err)
+	}
+	if secret.Type != "Embedded" {
+		t.Errorf("Expected Type Embedded, got %s", secret.Type)
+	}
+	dataMap := secret.Data.(map[string]interface{})
+	if dataMap["jwe"] != "mock-jwe" {
+		t.Errorf("Expected jwe mock-jwe, got %v", dataMap["jwe"])
+	}
+}
+
 func boolPtr(b bool) *bool {
 	return &b
 }

@@ -53,7 +53,7 @@ func TestUnitStoreForwardResource(t *testing.T) {
 		}),
 	}
 
-	resource.Test(t, resource.TestCase{
+	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
