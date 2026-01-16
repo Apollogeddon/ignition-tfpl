@@ -67,9 +67,6 @@ func (p *IgnitionProvider) Configure(ctx context.Context, req provider.Configure
 		return
 	}
 
-	// Configuration values are now available.
-	// If any of the expected values are missing, return errors
-
 	if data.Host.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
@@ -141,8 +138,6 @@ func (p *IgnitionProvider) Configure(ctx context.Context, req provider.Configure
 		}
 	}
 
-	// Make the client available during DataSource and Resource
-	// type Configure methods.
 	resp.DataSourceData = apiClient
 	resp.ResourceData = apiClient
 }
