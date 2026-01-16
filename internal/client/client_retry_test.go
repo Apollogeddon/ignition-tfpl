@@ -1,0 +1,156 @@
+package client
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+	"time"
+)
+
+func TestClient_RetryOn503(t *testing.T) {
+	var reqCount int32
+
+	// Mock Server that fails 3 times with 503 then succeeds
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&reqCount, 1)
+		if count <= 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Service Restarting"))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
+	}))
+	defer server.Close()
+
+	// Client with short retry wait for testing speed
+	c, err := NewClient(server.URL, "test-token", false)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+	// Override backoff to speed up test
+	c.HTTPClient.RetryWaitMin = 10 * time.Millisecond
+	c.HTTPClient.RetryWaitMax = 50 * time.Millisecond
+
+	// Test
+	var dest ResourceResponse[map[string]any]
+	err = c.GetResource(context.Background(), "test-type", "test-name", &dest)
+	if err != nil {
+		t.Fatalf("Expected success after retries, got error: %v", err)
+	}
+
+	if atomic.LoadInt32(&reqCount) != 4 {
+		t.Errorf("Expected 4 requests (3 retries), got %d", reqCount)
+	}
+}
+
+func TestClient_RetryOn429(t *testing.T) {
+	var reqCount int32
+
+	// Mock Server that fails 2 times with 429 then succeeds
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&reqCount, 1)
+		if count <= 2 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "test-token", false)
+	c.HTTPClient.RetryWaitMin = 10 * time.Millisecond
+	c.HTTPClient.RetryWaitMax = 50 * time.Millisecond
+
+	var dest ResourceResponse[map[string]any]
+	err := c.GetResource(context.Background(), "test-type", "test-name", &dest)
+	if err != nil {
+		t.Fatalf("Expected success after retries, got error: %v", err)
+	}
+
+	if atomic.LoadInt32(&reqCount) != 3 {
+		t.Errorf("Expected 3 requests, got %d", reqCount)
+	}
+}
+
+func TestClient_NoRetryOn400(t *testing.T) {
+	var reqCount int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reqCount, 1)
+		w.WriteHeader(http.StatusBadRequest) // 400 should not retry
+		w.Write([]byte(`{"success": false, "messages": ["Bad Request"]}`))
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "test-token", false)
+
+	var dest ResourceResponse[map[string]any]
+	err := c.GetResource(context.Background(), "test-type", "test-name", &dest)
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+
+	if atomic.LoadInt32(&reqCount) != 1 {
+		t.Errorf("Expected 1 request, got %d", reqCount)
+	}
+}
+
+func TestClient_WaitLogic_SimulatedRestart(t *testing.T) {
+	// Item 2: Verify that we handle a "Wait" scenario. 
+	// This simulates a resource creation where the subsequent GET fails initially (e.g. restart)
+	// but eventually succeeds.
+	
+	var postCount int32
+	var getCount int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			atomic.AddInt32(&postCount, 1)
+			// Create returns 200 OK immediately with a changeset
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{
+				"success": true,
+				"changes": [{"name": "new-resource", "type": "test", "collection": "tests"}]
+			}`))
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			count := atomic.AddInt32(&getCount, 1)
+			if count <= 3 {
+				// Simulate Gateway restarting / API unavailable after config change
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"name": "new-resource", "config": {}}`))
+			return
+		}
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "test-token", false)
+	c.HTTPClient.RetryWaitMin = 10 * time.Millisecond
+	c.HTTPClient.RetryWaitMax = 50 * time.Millisecond
+
+	// We use CreateResource which internally calls unmarshalResourceResponse -> GetResourceWithModule
+	// The GetResourceWithModule should retry on the 503s
+	item := map[string]string{"foo": "bar"}
+	var dest ResourceResponse[map[string]any]
+	
+	err := c.CreateResource(context.Background(), "test", item, &dest)
+	if err != nil {
+		t.Fatalf("Expected CreateResource to handle transient get errors, got: %v", err)
+	}
+
+	if atomic.LoadInt32(&postCount) != 1 {
+		t.Errorf("Expected 1 POST, got %d", postCount)
+	}
+	if atomic.LoadInt32(&getCount) != 4 {
+		t.Errorf("Expected 4 GETs (3 fails + 1 success), got %d", getCount)
+	}
+}

@@ -370,7 +370,7 @@ type GanGeneralSettingsConfig struct {
 // NewClient creates a new Ignition API client
 func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 	rc := retryablehttp.NewClient()
-	rc.RetryMax = 4
+	rc.RetryMax = 10
 	rc.Logger = nil // Disable default logging to avoid noise
 	rc.HTTPClient.Timeout = 10 * time.Second
 	
