@@ -32,7 +32,7 @@ func TestUnitCoreResources(t *testing.T) {
 			return &tp, nil
 		},
 		GetTagProviderFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.TagProviderConfig], error) {
-			return &client.ResourceResponse[client.TagProviderConfig]{Name: name, Signature: "sig", Enabled: base.BoolPtr(true), Config: client.TagProviderConfig{Profile: client.TagProviderProfile{Type: "standard"}}}, nil
+			return &client.ResourceResponse[client.TagProviderConfig]{Name: name, Signature: "sig", Enabled: base.BoolPtr(true), Config: client.TagProviderConfig{Profile: client.TagProviderProfile{Type: "STANDARD"}}}, nil
 		},
 		CreateUserSourceFunc: func(ctx context.Context, us client.ResourceResponse[client.UserSourceConfig]) (*client.ResourceResponse[client.UserSourceConfig], error) {
 			us.Signature = "sig"
@@ -75,7 +75,7 @@ func TestUnitCoreResources(t *testing.T) {
 					}
 					resource "ignition_tag_provider" "test" {
 						name = "tags"
-						type = "standard"
+						type = "STANDARD"
 					}
 					resource "ignition_user_source" "test" {
 						name = "users"

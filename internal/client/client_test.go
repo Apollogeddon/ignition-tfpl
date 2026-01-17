@@ -327,7 +327,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 			{
 				Name:      "test-tp",
 				Signature: "sig-tp",
-				Config:    TagProviderConfig{Profile: TagProviderProfile{Type: "standard"}},
+				Config:    TagProviderConfig{Profile: TagProviderProfile{Type: "STANDARD"}},
 			},
 		}
 		json.NewEncoder(w).Encode(response)
@@ -335,7 +335,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Profile: TagProviderProfile{Type: "standard"}}}
+	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Profile: TagProviderProfile{Type: "STANDARD"}}}
 	
 	_, err := c.CreateTagProvider(context.Background(), tp)
 	if err != nil {

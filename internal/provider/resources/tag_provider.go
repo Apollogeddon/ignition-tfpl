@@ -108,6 +108,7 @@ func (r *TagProviderResource) MapPlanToClient(ctx context.Context, model *TagPro
 			Type: model.Type.ValueString(),
 		},
 		Description: model.Description.ValueString(),
+		Settings:    make(map[string]any),
 	}, nil
 }
 

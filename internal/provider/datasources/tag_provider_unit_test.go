@@ -18,7 +18,7 @@ func TestUnitTagProviderDataSource(t *testing.T) {
 				Name: name,
 				Config: client.TagProviderConfig{
 					Profile: client.TagProviderProfile{
-						Type: "standard",
+						Type: "STANDARD",
 					},
 					Description: "A mock tag provider",
 				},
@@ -48,7 +48,7 @@ func TestUnitTagProviderDataSource(t *testing.T) {
 				`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "name", "mock-tags"),
-					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "type", "standard"),
+					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "type", "STANDARD"),
 					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "description", "A mock tag provider"),
 				),
 			},

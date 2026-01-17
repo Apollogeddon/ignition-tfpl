@@ -15,7 +15,7 @@ Manages a Tag Provider in Ignition.
 ```terraform
 resource "ignition_tag_provider" "example" {
   name        = "MyTags"
-  type        = "standard"
+  type        = "STANDARD"
   description = "A standard tag provider"
 }
 ```

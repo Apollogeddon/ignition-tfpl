@@ -51,7 +51,7 @@ func TestUnitDataSources(t *testing.T) {
 				Name: name,
 				Config: client.TagProviderConfig{
 					Profile: client.TagProviderProfile{
-						Type: "standard",
+						Type: "STANDARD",
 					},
 				},
 			}, nil
@@ -100,7 +100,7 @@ func TestUnitDataSources(t *testing.T) {
 					resource.TestCheckResourceAttr("data.ignition_database_connection.test", "type", "test-driver"),
 					resource.TestCheckResourceAttr("data.ignition_smtp_profile.test", "hostname", "smtp.test.com"),
 					resource.TestCheckResourceAttr("data.ignition_store_forward.test", "forwarding_policy", "ALL"),
-					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "type", "standard"),
+					resource.TestCheckResourceAttr("data.ignition_tag_provider.test", "type", "STANDARD"),
 					resource.TestCheckResourceAttr("data.ignition_user_source.test", "type", "internal"),
 				),
 			},

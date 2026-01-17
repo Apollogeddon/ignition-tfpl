@@ -30,7 +30,7 @@ func TestUnitTagProviderResource(t *testing.T) {
 				Signature: currentSignature,
 				Config: client.TagProviderConfig{
 					Profile: client.TagProviderProfile{
-						Type: "standard",
+						Type: "STANDARD",
 					},
 					Description: currentDescription,
 				},
@@ -65,13 +65,13 @@ func TestUnitTagProviderResource(t *testing.T) {
 					}
 					resource "ignition_tag_provider" "test" {
 						name        = "test-tags"
-						type        = "standard"
+						type        = "STANDARD"
 						description = "Test Description"
 					}
 				`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("ignition_tag_provider.test", "name", "test-tags"),
-					resource.TestCheckResourceAttr("ignition_tag_provider.test", "type", "standard"),
+					resource.TestCheckResourceAttr("ignition_tag_provider.test", "type", "STANDARD"),
 					resource.TestCheckResourceAttr("ignition_tag_provider.test", "description", "Test Description"),
 					resource.TestCheckResourceAttr("ignition_tag_provider.test", "signature", "sig-123"),
 				),
@@ -85,7 +85,7 @@ func TestUnitTagProviderResource(t *testing.T) {
 					}
 					resource "ignition_tag_provider" "test" {
 						name        = "test-tags"
-						type        = "standard"
+						type        = "STANDARD"
 						description = "Updated Description"
 					}
 				`,

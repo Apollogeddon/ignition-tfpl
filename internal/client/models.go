@@ -66,6 +66,7 @@ type TagProviderProfile struct {
 type TagProviderConfig struct {
 	Profile     TagProviderProfile `json:"profile"`
 	Description string             `json:"description,omitempty"`
+	Settings    map[string]any     `json:"settings"`
 }
 
 type UserSourceProfile struct {
