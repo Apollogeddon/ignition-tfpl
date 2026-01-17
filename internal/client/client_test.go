@@ -26,7 +26,7 @@ func TestClient_GetResource(t *testing.T) {
 			Enabled: boolPtr(true),
 			Config:  map[string]any{"key": "value"},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -70,7 +70,7 @@ func TestClient_CreateResource(t *testing.T) {
 				Config:    map[string]any{"key": "value"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -115,7 +115,7 @@ func TestClient_UpdateResource(t *testing.T) {
 				Config:    map[string]any{"key": "updated"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -177,7 +177,7 @@ func TestClient_ProjectOperations(t *testing.T) {
 				t.Errorf("Expected path /data/api/v1/projects/find/test-project, got %s", r.URL.Path)
 			}
 			p := Project{Name: "test-project", Enabled: true}
-			json.NewEncoder(w).Encode(p)
+			_ = json.NewEncoder(w).Encode(p)
 		case http.MethodPost:
 			if r.URL.Path != "/data/api/v1/projects" {
 				t.Errorf("Expected path /data/api/v1/projects, got %s", r.URL.Path)
@@ -235,19 +235,18 @@ func TestClient_APIError(t *testing.T) {
 	// Mock Server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		response := APIErrorResponse{
-			Success: false,
-			Problem: &struct {
-				Message    string   `json:"message"`
-				StackTrace []string `json:"stacktrace,omitempty"`
-			}{
-				Message: "Resource already exists",
-			},
-		}
-		json.NewEncoder(w).Encode(response)
-	}))
-	defer server.Close()
-
+		        response := APIErrorResponse{
+		            Success: false,
+		            Problem: &struct {
+		                Message    string   `json:"message"`
+		                StackTrace []string `json:"stacktrace,omitempty"`
+		            }{
+		                Message: "Resource already exists",
+		            },
+		        }
+		        _ = json.NewEncoder(w).Encode(response)
+		    }))
+		    defer server.Close()
 	// Client
 	c, err := NewClient(server.URL, "test-token", false)
 	if err != nil {
@@ -276,7 +275,7 @@ func TestClient_DatabaseConnectionOperations(t *testing.T) {
 				Config:    DatabaseConfig{Driver: "MariaDB"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -303,7 +302,7 @@ func TestClient_UserSourceOperations(t *testing.T) {
 				Config:    UserSourceConfig{Profile: UserSourceProfile{Type: "internal"}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -330,7 +329,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 				Config:    TagProviderConfig{Profile: TagProviderProfile{Type: "STANDARD"}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -357,7 +356,7 @@ func TestClient_AuditProfileOperations(t *testing.T) {
 				Config:    AuditProfileConfig{Profile: AuditProfileProfile{Type: "database"}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -385,7 +384,7 @@ func TestClient_ModuleResourceOperations(t *testing.T) {
 				Config:    map[string]any{},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -413,7 +412,7 @@ func TestClient_ModuleResourceOperations(t *testing.T) {
 func TestClient_RedundancyOperations(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode(RedundancyConfig{Role: "Independent"})
+			_ = json.NewEncoder(w).Encode(RedundancyConfig{Role: "Independent"})
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
@@ -444,7 +443,7 @@ func TestClient_AlarmJournalOperations(t *testing.T) {
 				Signature: "sig-journal",
 				Config:    AlarmJournalConfig{Profile: AlarmJournalProfile{Type: "database"}},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[AlarmJournalConfig]{
@@ -454,7 +453,7 @@ func TestClient_AlarmJournalOperations(t *testing.T) {
 				Config:    AlarmJournalConfig{Profile: AlarmJournalProfile{Type: "database"}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 	
@@ -483,7 +482,7 @@ func TestClient_SMTPProfileOperations(t *testing.T) {
 				Signature: "sig-smtp",
 				Config:    SMTPProfileConfig{Profile: SMTPProfileProfile{Type: "classic"}},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[SMTPProfileConfig]{
@@ -493,7 +492,7 @@ func TestClient_SMTPProfileOperations(t *testing.T) {
 				Config:    SMTPProfileConfig{Profile: SMTPProfileProfile{Type: "classic"}},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -522,7 +521,7 @@ func TestClient_StoreAndForwardOperations(t *testing.T) {
 				Signature: "sig-sf",
 				Config:    StoreAndForwardConfig{ForwardingPolicy: "ALL"},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[StoreAndForwardConfig]{
@@ -532,7 +531,7 @@ func TestClient_StoreAndForwardOperations(t *testing.T) {
 				Config:    StoreAndForwardConfig{ForwardingPolicy: "ALL"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -561,7 +560,7 @@ func TestClient_IdentityProviderOperations(t *testing.T) {
 				Signature: "sig-idp",
 				Config:    IdentityProviderConfig{Type: "Ignition"},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[IdentityProviderConfig]{
@@ -571,7 +570,7 @@ func TestClient_IdentityProviderOperations(t *testing.T) {
 				Config:    IdentityProviderConfig{Type: "Ignition"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -600,7 +599,7 @@ func TestClient_GanOutgoingOperations(t *testing.T) {
 				Signature: "sig-gan",
 				Config:    GanOutgoingConfig{Host: "localhost"},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[GanOutgoingConfig]{
@@ -610,7 +609,7 @@ func TestClient_GanOutgoingOperations(t *testing.T) {
 				Config:    GanOutgoingConfig{Host: "localhost"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -637,7 +636,7 @@ func TestClient_GanGeneralSettingsOperations(t *testing.T) {
 			Name:   "settings",
 			Config: GanGeneralSettingsConfig{AllowIncoming: true},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -660,7 +659,7 @@ func TestClient_DeviceOperations(t *testing.T) {
 				Signature: "sig-device",
 				Config:    DeviceConfig{"type": "Simulator"},
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			return
 		}
 		response := []ResourceResponse[DeviceConfig]{
@@ -670,7 +669,7 @@ func TestClient_DeviceOperations(t *testing.T) {
 				Config:    DeviceConfig{"type": "Simulator"},
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
@@ -698,7 +697,7 @@ func TestClient_EncryptSecret(t *testing.T) {
 		}
 		
 		response := map[string]interface{}{"jwe": "mock-jwe"}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 

@@ -17,11 +17,11 @@ func TestClient_RetryOn503(t *testing.T) {
 		count := atomic.AddInt32(&reqCount, 1)
 		if count <= 3 {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Service Restarting"))
+			_, _ = w.Write([]byte("Service Restarting"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
+		_, _ = w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
 	}))
 	defer server.Close()
 
@@ -57,7 +57,7 @@ func TestClient_RetryOn429(t *testing.T) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
+		_, _ = w.Write([]byte(`{"name": "success", "enabled": true, "config": {}}`))
 	}))
 	defer server.Close()
 
@@ -82,7 +82,7 @@ func TestClient_NoRetryOn400(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&reqCount, 1)
 		w.WriteHeader(http.StatusBadRequest) // 400 should not retry
-		w.Write([]byte(`{"success": false, "messages": ["Bad Request"]}`))
+		_, _ = w.Write([]byte(`{"success": false, "messages": ["Bad Request"]}`))
 	}))
 	defer server.Close()
 
@@ -112,7 +112,7 @@ func TestClient_WaitLogic_SimulatedRestart(t *testing.T) {
 			atomic.AddInt32(&postCount, 1)
 			// Create returns 200 OK immediately with a changeset
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{
+			_, _ = w.Write([]byte(`{
 				"success": true,
 				"changes": [{"name": "new-resource", "type": "test", "collection": "tests"}]
 			}`))
@@ -127,7 +127,7 @@ func TestClient_WaitLogic_SimulatedRestart(t *testing.T) {
 				return
 			}
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"name": "new-resource", "config": {}}`))
+			_, _ = w.Write([]byte(`{"name": "new-resource", "config": {}}`))
 			return
 		}
 	}))

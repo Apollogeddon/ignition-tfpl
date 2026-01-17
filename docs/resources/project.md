@@ -43,3 +43,4 @@ resource "ignition_project" "example" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `signature` (String) The signature of the resource, used for updates and deletes.

@@ -31,6 +31,7 @@ resource "ignition_tag_provider" "example" {
 ### Optional
 
 - `description` (String) A description of the tag provider.
+- `enabled` (Boolean) Whether the tag provider is enabled.
 
 ### Read-Only
 
