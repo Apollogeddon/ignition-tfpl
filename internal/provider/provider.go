@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/apollogeddon/ignition-tfpl/internal/client"
+	"github.com/apollogeddon/ignition-tfpl/internal/provider/datasources"
+	"github.com/apollogeddon/ignition-tfpl/internal/provider/resources"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -144,32 +146,32 @@ func (p *IgnitionProvider) Configure(ctx context.Context, req provider.Configure
 
 func (p *IgnitionProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewDatabaseConnectionResource,
-		NewTagProviderResource,
-		NewUserSourceResource,
-		NewProjectResource,
-		NewAuditProfileResource,
-		NewAlarmNotificationProfileResource,
-		NewOpcUaConnectionResource,
-		NewAlarmJournalResource,
-		NewSMTPProfileResource,
-		NewStoreAndForwardResource,
-		NewIdentityProviderResource,
-		NewGanOutgoingResource,
-		NewRedundancyResource,
-		NewGanGeneralSettingsResource,
-		NewDeviceResource,
+		resources.NewDatabaseConnectionResource,
+		resources.NewTagProviderResource,
+		resources.NewUserSourceResource,
+		resources.NewProjectResource,
+		resources.NewAuditProfileResource,
+		resources.NewAlarmNotificationProfileResource,
+		resources.NewOpcUaConnectionResource,
+		resources.NewAlarmJournalResource,
+		resources.NewSMTPProfileResource,
+		resources.NewStoreAndForwardResource,
+		resources.NewIdentityProviderResource,
+		resources.NewGanOutgoingResource,
+		resources.NewRedundancyResource,
+		resources.NewGanGeneralSettingsResource,
+		resources.NewDeviceResource,
 	}
 }
 
 func (p *IgnitionProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewDatabaseConnectionDataSource,
-		NewProjectDataSource,
-		NewUserSourceDataSource,
-		NewTagProviderDataSource,
-		NewSMTPProfileDataSource,
-		NewStoreAndForwardDataSource,
+		datasources.NewDatabaseConnectionDataSource,
+		datasources.NewProjectDataSource,
+		datasources.NewUserSourceDataSource,
+		datasources.NewTagProviderDataSource,
+		datasources.NewSMTPProfileDataSource,
+		datasources.NewStoreAndForwardDataSource,
 	}
 }
 
