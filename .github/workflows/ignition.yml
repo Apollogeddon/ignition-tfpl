@@ -1,0 +1,52 @@
+name: Acceptance Tests (Ignition 8.3)
+
+on:
+  workflow_dispatch: # Allows manual triggering
+  pull_request:
+    paths:
+      - 'internal/provider/**'
+      - 'internal/client/**'
+
+jobs:
+  acceptance:
+    name: Ignition 8.3 Acceptance Tests
+    runs-on: ubuntu-latest
+    if: ${{ secrets.IGNITION_TOKEN != '' }}
+    
+    services:
+      ignition:
+        # Using the official image. Note: 8.3.0 is used as a placeholder 
+        # for the specific version you intend to test.
+        image: inductiveautomation/ignition:8.3.0
+        ports:
+          - 8088:8088
+        env:
+          ACCEPT_IGNITION_EULA: "Y"
+          GATEWAY_ADMIN_PASSWORD: password
+          IGNITION_EDITION: standard
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Wait for Ignition Gateway
+        run: |
+          echo "Waiting for Ignition Gateway to start..."
+          # Poll the gateway info endpoint until it returns a 200 OK
+          timeout 300s bash -c 'until curl -s -f http://localhost:8088/system/gwinfo; do echo "Still waiting..."; sleep 10; done'
+          echo "Ignition Gateway is up!"
+
+      - name: Run Acceptance Tests
+        run: go test -v ./internal/provider/...
+        env:
+          TF_ACC: "1"
+          IGNITION_HOST: "http://localhost:8088"
+          # This token must be configured in your GitHub Repository Secrets.
+          # Alternatively, for a purely ephemeral test, you could use a 
+          # provisioning script to generate one via the Ignition CLI/API.
+          IGNITION_TOKEN: ${{ secrets.IGNITION_TOKEN }}
