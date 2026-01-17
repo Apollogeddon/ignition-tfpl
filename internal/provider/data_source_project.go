@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
+	"github.com/apollogeddon/ignition-tfpl/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"

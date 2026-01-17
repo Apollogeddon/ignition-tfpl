@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
+	"github.com/apollogeddon/ignition-tfpl/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )

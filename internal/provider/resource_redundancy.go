@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
+	"github.com/apollogeddon/ignition-tfpl/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -25,12 +25,13 @@ func NewRedundancyResource() resource.Resource {
 
 // RedundancyResource defines the resource implementation.
 type RedundancyResource struct {
-	client client.IgnitionClient
+	client  client.IgnitionClient
+	generic GenericIgnitionResource[client.RedundancyConfig, RedundancyResourceModel]
 }
 
 // RedundancyResourceModel describes the resource data model.
 type RedundancyResourceModel struct {
-	Id                  types.String         `tfsdk:"id"`
+	BaseResourceModel
 	Role                types.String         `tfsdk:"role"`
 	ActiveHistoryLevel  types.String         `tfsdk:"active_history_level"`
 	JoinWaitTime        types.Int64          `tfsdk:"join_wait_time"`
@@ -64,6 +65,20 @@ func (r *RedundancyResource) Schema(ctx context.Context, req resource.SchemaRequ
 			"id": schema.StringAttribute{
 				Computed: true,
 			},
+			"name": schema.StringAttribute{
+				Description: "Internal name for the resource (fixed to 'gateway-redundancy').",
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("gateway-redundancy"),
+			},
+			"description": schema.StringAttribute{
+				Optional: true,
+			},
+			"enabled": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  booldefault.StaticBool(true),
+			},
 			"role": schema.StringAttribute{
 				Description: "The node's redundancy role (Independent, Backup, Master).",
 				Required:    true,
@@ -93,6 +108,9 @@ func (r *RedundancyResource) Schema(ctx context.Context, req resource.SchemaRequ
 				Optional: true,
 				Computed: true,
 				Default:  booldefault.StaticBool(false),
+			},
+			"signature": schema.StringAttribute{
+				Computed: true,
 			},
 			"gateway_network_setup": schema.SingleNestedAttribute{
 				Description: "Gateway network settings to establish a connection to the redundant master. (Only applies to Backup)",
@@ -130,7 +148,7 @@ func (r *RedundancyResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	c, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -139,158 +157,139 @@ func (r *RedundancyResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	r.client = client
+	r.client = c
+	r.generic = GenericIgnitionResource[client.RedundancyConfig, RedundancyResourceModel]{
+		Client:       c,
+		Handler:      r,
+		ResourceType: "gateway-redundancy",
+		CreateFunc: func(ctx context.Context, res client.ResourceResponse[client.RedundancyConfig]) (*client.ResourceResponse[client.RedundancyConfig], error) {
+			err := c.UpdateRedundancyConfig(ctx, res.Config)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.RedundancyConfig]{
+				Name:   "gateway-redundancy",
+				Config: res.Config,
+			}, nil
+		},
+		GetFunc: func(ctx context.Context, _ string) (*client.ResourceResponse[client.RedundancyConfig], error) {
+			conf, err := c.GetRedundancyConfig(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.RedundancyConfig]{
+				Name:   "gateway-redundancy",
+				Config: *conf,
+			}, nil
+		},
+		UpdateFunc: func(ctx context.Context, res client.ResourceResponse[client.RedundancyConfig]) (*client.ResourceResponse[client.RedundancyConfig], error) {
+			err := c.UpdateRedundancyConfig(ctx, res.Config)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.RedundancyConfig]{
+				Name:   "gateway-redundancy",
+				Config: res.Config,
+			}, nil
+		},
+		DeleteFunc: func(ctx context.Context, _, _ string) error {
+			return c.UpdateRedundancyConfig(ctx, client.RedundancyConfig{Role: "Independent"})
+		},
+	}
+}
+
+func (r *RedundancyResource) MapPlanToClient(ctx context.Context, model *RedundancyResourceModel) (client.RedundancyConfig, error) {
+	config := client.RedundancyConfig{
+		Role:                model.Role.ValueString(),
+		ActiveHistoryLevel:  model.ActiveHistoryLevel.ValueString(),
+		JoinWaitTime:        int(model.JoinWaitTime.ValueInt64()),
+		RecoveryMode:        model.RecoveryMode.ValueString(),
+		AllowHistoryCleanup: model.AllowHistoryCleanup.ValueBool(),
+	}
+
+	if model.GatewayNetworkSetup != nil {
+		config.GatewayNetworkSetup = &struct {
+			Host               string  `json:"host,omitempty"`
+			Port               int     `json:"port,omitempty"`
+			EnableSsl          bool    `json:"enableSsl,omitempty"`
+			PingRate           float64 `json:"pingRate,omitempty"`
+			PingTimeout        float64 `json:"pingTimeout,omitempty"`
+			PingMaxMissed      float64 `json:"pingMaxMissed,omitempty"`
+			WebsocketTimeout   float64 `json:"websocketTimeout,omitempty"`
+			HttpConnectTimeout float64 `json:"httpConnectTimeout,omitempty"`
+			HttpReadTimeout    float64 `json:"httpReadTimeout,omitempty"`
+			SendThreads        float64 `json:"sendThreads,omitempty"`
+			ReceiveThreads     float64 `json:"receiveThreads,omitempty"`
+		}{
+			Host:               model.GatewayNetworkSetup.Host.ValueString(),
+			Port:               int(model.GatewayNetworkSetup.Port.ValueInt64()),
+			EnableSsl:          model.GatewayNetworkSetup.EnableSsl.ValueBool(),
+			PingRate:           model.GatewayNetworkSetup.PingRate.ValueFloat64(),
+			PingTimeout:        model.GatewayNetworkSetup.PingTimeout.ValueFloat64(),
+			PingMaxMissed:      model.GatewayNetworkSetup.PingMaxMissed.ValueFloat64(),
+			WebsocketTimeout:   model.GatewayNetworkSetup.WebsocketTimeout.ValueFloat64(),
+			HttpConnectTimeout: model.GatewayNetworkSetup.HttpConnectTimeout.ValueFloat64(),
+			HttpReadTimeout:    model.GatewayNetworkSetup.HttpReadTimeout.ValueFloat64(),
+			SendThreads:        model.GatewayNetworkSetup.SendThreads.ValueFloat64(),
+			ReceiveThreads:     model.GatewayNetworkSetup.ReceiveThreads.ValueFloat64(),
+		}
+	}
+
+	return config, nil
+}
+
+func (r *RedundancyResource) MapClientToState(ctx context.Context, name string, config *client.RedundancyConfig, model *RedundancyResourceModel) error {
+	model.Name = types.StringValue(name)
+	model.Role = types.StringValue(config.Role)
+	model.ActiveHistoryLevel = types.StringValue(config.ActiveHistoryLevel)
+	model.JoinWaitTime = types.Int64Value(int64(config.JoinWaitTime))
+	model.RecoveryMode = types.StringValue(config.RecoveryMode)
+	model.AllowHistoryCleanup = types.BoolValue(config.AllowHistoryCleanup)
+
+	if config.GatewayNetworkSetup != nil {
+		model.GatewayNetworkSetup = &GatewayNetworkSetup{
+			Host:               types.StringValue(config.GatewayNetworkSetup.Host),
+			Port:               types.Int64Value(int64(config.GatewayNetworkSetup.Port)),
+			EnableSsl:          types.BoolValue(config.GatewayNetworkSetup.EnableSsl),
+			PingRate:           types.Float64Value(config.GatewayNetworkSetup.PingRate),
+			PingTimeout:        types.Float64Value(config.GatewayNetworkSetup.PingTimeout),
+			PingMaxMissed:      types.Float64Value(config.GatewayNetworkSetup.PingMaxMissed),
+			WebsocketTimeout:   types.Float64Value(config.GatewayNetworkSetup.WebsocketTimeout),
+			HttpConnectTimeout: types.Float64Value(config.GatewayNetworkSetup.HttpConnectTimeout),
+			HttpReadTimeout:    types.Float64Value(config.GatewayNetworkSetup.HttpReadTimeout),
+			SendThreads:        types.Float64Value(config.GatewayNetworkSetup.SendThreads),
+			ReceiveThreads:     types.Float64Value(config.GatewayNetworkSetup.ReceiveThreads),
+		}
+	}
+	return nil
 }
 
 func (r *RedundancyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data RedundancyResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+	// Ensure fixed name
+	data.Name = types.StringValue("gateway-redundancy")
+	r.generic.PopulateBase = func(m *RedundancyResourceModel, b *BaseResourceModel) {
+		b.Name = m.Name
+		b.Id = m.Id
 	}
-
-	config := client.RedundancyConfig{
-		Role:                data.Role.ValueString(),
-		ActiveHistoryLevel:  data.ActiveHistoryLevel.ValueString(),
-		JoinWaitTime:        int(data.JoinWaitTime.ValueInt64()),
-		RecoveryMode:        data.RecoveryMode.ValueString(),
-		AllowHistoryCleanup: data.AllowHistoryCleanup.ValueBool(),
+	r.generic.PopulateModel = func(b *BaseResourceModel, m *RedundancyResourceModel) {
+		m.Name = b.Name
+		m.Id = b.Id
 	}
-
-	if data.GatewayNetworkSetup != nil {
-		config.GatewayNetworkSetup = &struct {
-			Host               string  `json:"host,omitempty"`
-			Port               int     `json:"port,omitempty"`
-			EnableSsl          bool    `json:"enableSsl,omitempty"`
-			PingRate           float64 `json:"pingRate,omitempty"`
-			PingTimeout        float64 `json:"pingTimeout,omitempty"`
-			PingMaxMissed      float64 `json:"pingMaxMissed,omitempty"`
-			WebsocketTimeout   float64 `json:"websocketTimeout,omitempty"`
-			HttpConnectTimeout float64 `json:"httpConnectTimeout,omitempty"`
-			HttpReadTimeout    float64 `json:"httpReadTimeout,omitempty"`
-			SendThreads        float64 `json:"sendThreads,omitempty"`
-			ReceiveThreads     float64 `json:"receiveThreads,omitempty"`
-		}{
-			Host:               data.GatewayNetworkSetup.Host.ValueString(),
-			Port:               int(data.GatewayNetworkSetup.Port.ValueInt64()),
-			EnableSsl:          data.GatewayNetworkSetup.EnableSsl.ValueBool(),
-			PingRate:           data.GatewayNetworkSetup.PingRate.ValueFloat64(),
-			PingTimeout:        data.GatewayNetworkSetup.PingTimeout.ValueFloat64(),
-			PingMaxMissed:      data.GatewayNetworkSetup.PingMaxMissed.ValueFloat64(),
-			WebsocketTimeout:   data.GatewayNetworkSetup.WebsocketTimeout.ValueFloat64(),
-			HttpConnectTimeout: data.GatewayNetworkSetup.HttpConnectTimeout.ValueFloat64(),
-			HttpReadTimeout:    data.GatewayNetworkSetup.HttpReadTimeout.ValueFloat64(),
-			SendThreads:        data.GatewayNetworkSetup.SendThreads.ValueFloat64(),
-			ReceiveThreads:     data.GatewayNetworkSetup.ReceiveThreads.ValueFloat64(),
-		}
-	}
-
-	err := r.client.UpdateRedundancyConfig(ctx, config)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating redundancy config", err.Error())
-		return
-	}
-
-	data.Id = types.StringValue("gateway_redundancy")
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *RedundancyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data RedundancyResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	res, err := r.client.GetRedundancyConfig(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError("Error reading redundancy config", err.Error())
-		return
-	}
-
-	data.Id = types.StringValue("gateway_redundancy")
-	data.Role = types.StringValue(res.Role)
-	data.ActiveHistoryLevel = types.StringValue(res.ActiveHistoryLevel)
-	data.JoinWaitTime = types.Int64Value(int64(res.JoinWaitTime))
-	data.RecoveryMode = types.StringValue(res.RecoveryMode)
-	data.AllowHistoryCleanup = types.BoolValue(res.AllowHistoryCleanup)
-
-	if res.GatewayNetworkSetup != nil {
-		data.GatewayNetworkSetup = &GatewayNetworkSetup{
-			Host:               types.StringValue(res.GatewayNetworkSetup.Host),
-			Port:               types.Int64Value(int64(res.GatewayNetworkSetup.Port)),
-			EnableSsl:          types.BoolValue(res.GatewayNetworkSetup.EnableSsl),
-			PingRate:           types.Float64Value(res.GatewayNetworkSetup.PingRate),
-			PingTimeout:        types.Float64Value(res.GatewayNetworkSetup.PingTimeout),
-			PingMaxMissed:      types.Float64Value(res.GatewayNetworkSetup.PingMaxMissed),
-			WebsocketTimeout:   types.Float64Value(res.GatewayNetworkSetup.WebsocketTimeout),
-			HttpConnectTimeout: types.Float64Value(res.GatewayNetworkSetup.HttpConnectTimeout),
-			HttpReadTimeout:    types.Float64Value(res.GatewayNetworkSetup.HttpReadTimeout),
-			SendThreads:        types.Float64Value(res.GatewayNetworkSetup.SendThreads),
-			ReceiveThreads:     types.Float64Value(res.GatewayNetworkSetup.ReceiveThreads),
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *RedundancyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data RedundancyResourceModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	config := client.RedundancyConfig{
-		Role:                data.Role.ValueString(),
-		ActiveHistoryLevel:  data.ActiveHistoryLevel.ValueString(),
-		JoinWaitTime:        int(data.JoinWaitTime.ValueInt64()),
-		RecoveryMode:        data.RecoveryMode.ValueString(),
-		AllowHistoryCleanup: data.AllowHistoryCleanup.ValueBool(),
-	}
-
-	if data.GatewayNetworkSetup != nil {
-		config.GatewayNetworkSetup = &struct {
-			Host               string  `json:"host,omitempty"`
-			Port               int     `json:"port,omitempty"`
-			EnableSsl          bool    `json:"enableSsl,omitempty"`
-			PingRate           float64 `json:"pingRate,omitempty"`
-			PingTimeout        float64 `json:"pingTimeout,omitempty"`
-			PingMaxMissed      float64 `json:"pingMaxMissed,omitempty"`
-			WebsocketTimeout   float64 `json:"websocketTimeout,omitempty"`
-			HttpConnectTimeout float64 `json:"httpConnectTimeout,omitempty"`
-			HttpReadTimeout    float64 `json:"httpReadTimeout,omitempty"`
-			SendThreads        float64 `json:"sendThreads,omitempty"`
-			ReceiveThreads     float64 `json:"receiveThreads,omitempty"`
-		}{
-			Host:               data.GatewayNetworkSetup.Host.ValueString(),
-			Port:               int(data.GatewayNetworkSetup.Port.ValueInt64()),
-			EnableSsl:          data.GatewayNetworkSetup.EnableSsl.ValueBool(),
-			PingRate:           data.GatewayNetworkSetup.PingRate.ValueFloat64(),
-			PingTimeout:        data.GatewayNetworkSetup.PingTimeout.ValueFloat64(),
-			PingMaxMissed:      data.GatewayNetworkSetup.PingMaxMissed.ValueFloat64(),
-			WebsocketTimeout:   data.GatewayNetworkSetup.WebsocketTimeout.ValueFloat64(),
-			HttpConnectTimeout: data.GatewayNetworkSetup.HttpConnectTimeout.ValueFloat64(),
-			HttpReadTimeout:    data.GatewayNetworkSetup.HttpReadTimeout.ValueFloat64(),
-			SendThreads:        data.GatewayNetworkSetup.SendThreads.ValueFloat64(),
-			ReceiveThreads:     data.GatewayNetworkSetup.ReceiveThreads.ValueFloat64(),
-		}
-	}
-
-	err := r.client.UpdateRedundancyConfig(ctx, config)
-	if err != nil {
-		resp.Diagnostics.AddError("Error updating redundancy config", err.Error())
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *RedundancyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// For singletons, we usually don't "delete" the config, just disable it or leave it as is.
-	// We'll set the role to Independent to effectively "disable" redundancy.
-	config := client.RedundancyConfig{
-		Role: "Independent",
-	}
-	_ = r.client.UpdateRedundancyConfig(ctx, config)
+	var data RedundancyResourceModel
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }

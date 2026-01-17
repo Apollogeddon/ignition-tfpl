@@ -1,11 +1,11 @@
 default: build
 
 build:
-	go build -o terraform-provider-ignition.exe
+	go build -o ignition-tfpl.exe
 
 install: build
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/apollogeddon/ignition/0.0.1/windows_amd64
-	cp terraform-provider-ignition.exe ~/.terraform.d/plugins/registry.terraform.io/apollogeddon/ignition/0.0.1/windows_amd64/terraform-provider-ignition_v0.0.1.exe
+	cp ignition-tfpl.exe ~/.terraform.d/plugins/registry.terraform.io/apollogeddon/ignition/0.0.1/windows_amd64/ignition-tfpl_v0.0.1.exe
 
 test:
 	go test ./...

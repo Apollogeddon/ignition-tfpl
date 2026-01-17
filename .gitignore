@@ -27,7 +27,7 @@ override.tf.json
 
 # Local development files
 dev.tfrc
-terraform-provider-ignition
+ignition-tfpl
 
 # IDE specific ignores
 *.swp

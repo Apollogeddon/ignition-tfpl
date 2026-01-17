@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/apollogeddon/terraform-provider-ignition/internal/client"
+	"github.com/apollogeddon/ignition-tfpl/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"

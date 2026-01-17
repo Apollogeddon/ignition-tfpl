@@ -1,4 +1,4 @@
-module github.com/apollogeddon/terraform-provider-ignition
+module github.com/apollogeddon/ignition-tfpl
 
 go 1.25.5
 

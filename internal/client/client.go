@@ -13,319 +13,79 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
+type IgnitionClient interface {
+	GetResource(ctx context.Context, resourceType, name string, dest any) error
+	CreateResource(ctx context.Context, resourceType string, item any, dest any) error
+	UpdateResource(ctx context.Context, resourceType string, item any, dest any) error
+	DeleteResource(ctx context.Context, resourceType, name, signature string) error
+	GetResourceWithModule(ctx context.Context, module, resourceType, name string, dest any) error
+	CreateResourceWithModule(ctx context.Context, module, resourceType string, item any, dest any) error
+	UpdateResourceWithModule(ctx context.Context, module, resourceType string, item any, dest any) error
+	DeleteResourceWithModule(ctx context.Context, module, resourceType, name, signature string) error
+	EncryptSecret(ctx context.Context, plaintext string) (*IgnitionSecret, error)
+	GetProject(ctx context.Context, name string) (*Project, error)
+	CreateProject(ctx context.Context, p Project) (*Project, error)
+	UpdateProject(ctx context.Context, p Project) (*Project, error)
+	DeleteProject(ctx context.Context, name string) error
+	GetDatabaseConnection(ctx context.Context, name string) (*ResourceResponse[DatabaseConfig], error)
+	CreateDatabaseConnection(ctx context.Context, db ResourceResponse[DatabaseConfig]) (*ResourceResponse[DatabaseConfig], error)
+	UpdateDatabaseConnection(ctx context.Context, db ResourceResponse[DatabaseConfig]) (*ResourceResponse[DatabaseConfig], error)
+	DeleteDatabaseConnection(ctx context.Context, name, signature string) error
+	GetUserSource(ctx context.Context, name string) (*ResourceResponse[UserSourceConfig], error)
+	CreateUserSource(ctx context.Context, us ResourceResponse[UserSourceConfig]) (*ResourceResponse[UserSourceConfig], error)
+	UpdateUserSource(ctx context.Context, us ResourceResponse[UserSourceConfig]) (*ResourceResponse[UserSourceConfig], error)
+	DeleteUserSource(ctx context.Context, name, signature string) error
+	GetTagProvider(ctx context.Context, name string) (*ResourceResponse[TagProviderConfig], error)
+	CreateTagProvider(ctx context.Context, tp ResourceResponse[TagProviderConfig]) (*ResourceResponse[TagProviderConfig], error)
+	UpdateTagProvider(ctx context.Context, tp ResourceResponse[TagProviderConfig]) (*ResourceResponse[TagProviderConfig], error)
+	DeleteTagProvider(ctx context.Context, name, signature string) error
+	GetAuditProfile(ctx context.Context, name string) (*ResourceResponse[AuditProfileConfig], error)
+	CreateAuditProfile(ctx context.Context, ap ResourceResponse[AuditProfileConfig]) (*ResourceResponse[AuditProfileConfig], error)
+	UpdateAuditProfile(ctx context.Context, ap ResourceResponse[AuditProfileConfig]) (*ResourceResponse[AuditProfileConfig], error)
+	DeleteAuditProfile(ctx context.Context, name, signature string) error
+	GetAlarmNotificationProfile(ctx context.Context, name string) (*ResourceResponse[AlarmNotificationProfileConfig], error)
+	CreateAlarmNotificationProfile(ctx context.Context, anp ResourceResponse[AlarmNotificationProfileConfig]) (*ResourceResponse[AlarmNotificationProfileConfig], error)
+	UpdateAlarmNotificationProfile(ctx context.Context, anp ResourceResponse[AlarmNotificationProfileConfig]) (*ResourceResponse[AlarmNotificationProfileConfig], error)
+	DeleteAlarmNotificationProfile(ctx context.Context, name, signature string) error
+	GetOpcUaConnection(ctx context.Context, name string) (*ResourceResponse[OpcUaConnectionConfig], error)
+	CreateOpcUaConnection(ctx context.Context, item ResourceResponse[OpcUaConnectionConfig]) (*ResourceResponse[OpcUaConnectionConfig], error)
+	UpdateOpcUaConnection(ctx context.Context, item ResourceResponse[OpcUaConnectionConfig]) (*ResourceResponse[OpcUaConnectionConfig], error)
+	DeleteOpcUaConnection(ctx context.Context, name, signature string) error
+	GetAlarmJournal(ctx context.Context, name string) (*ResourceResponse[AlarmJournalConfig], error)
+	CreateAlarmJournal(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
+	UpdateAlarmJournal(ctx context.Context, item ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error)
+	DeleteAlarmJournal(ctx context.Context, name, signature string) error
+	GetSMTPProfile(ctx context.Context, name string) (*ResourceResponse[SMTPProfileConfig], error)
+	CreateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	UpdateSMTPProfile(ctx context.Context, item ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error)
+	DeleteSMTPProfile(ctx context.Context, name, signature string) error
+	GetStoreAndForward(ctx context.Context, name string) (*ResourceResponse[StoreAndForwardConfig], error)
+	CreateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	UpdateStoreAndForward(ctx context.Context, item ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error)
+	DeleteStoreAndForward(ctx context.Context, name, signature string) error
+	GetIdentityProvider(ctx context.Context, name string) (*ResourceResponse[IdentityProviderConfig], error)
+	CreateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	UpdateIdentityProvider(ctx context.Context, item ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error)
+	DeleteIdentityProvider(ctx context.Context, name, signature string) error
+	GetGanOutgoing(ctx context.Context, name string) (*ResourceResponse[GanOutgoingConfig], error)
+	CreateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	UpdateGanOutgoing(ctx context.Context, item ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error)
+	DeleteGanOutgoing(ctx context.Context, name, signature string) error
+	GetRedundancyConfig(ctx context.Context) (*RedundancyConfig, error)
+	UpdateRedundancyConfig(ctx context.Context, config RedundancyConfig) error
+	GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error)
+	UpdateGanGeneralSettings(ctx context.Context, item ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error)
+	GetDevice(ctx context.Context, name string) (*ResourceResponse[DeviceConfig], error)
+	CreateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	UpdateDevice(ctx context.Context, item ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error)
+	DeleteDevice(ctx context.Context, name, signature string) error
+}
+
 type Client struct {
 	HostURL    string
 	HTTPClient *retryablehttp.Client
 	Token      string
 }
-
-type APIErrorResponse struct {
-	Success       bool     `json:"success"`
-	Messages      []string `json:"messages,omitempty"`
-	FieldMessages []struct {
-		FieldName string   `json:"fieldName"`
-		Messages  []string `json:"messages"`
-	} `json:"fieldMessages,omitempty"`
-	Problem *struct {
-		Message    string   `json:"message"`
-		StackTrace []string `json:"stacktrace,omitempty"`
-	} `json:"problem,omitempty"`
-}
-
-func (e *APIErrorResponse) Error() string {
-	var msg string
-	if e.Problem != nil {
-		msg = fmt.Sprintf("API error: %s", e.Problem.Message)
-	} else if len(e.Messages) > 0 {
-		msg = fmt.Sprintf("API error: %v", e.Messages)
-	} else {
-		msg = "unknown API error"
-	}
-
-	if len(e.FieldMessages) > 0 {
-		msg += fmt.Sprintf(" (Field Errors: %v)", e.FieldMessages)
-	}
-	return msg
-}
-
-type ResourceResponse[T any] struct {
-	Module      string `json:"module,omitempty"`
-	Type        string `json:"type,omitempty"`
-	Name        string `json:"name"`
-	Enabled     *bool  `json:"enabled,omitempty"`
-	Description string `json:"description,omitempty"`
-	Signature   string `json:"signature,omitempty"`
-	Config      T      `json:"config"`
-}
-
-type ResourceChangesResponse struct {
-	Success bool `json:"success"`
-	Changes []struct {
-		Name         string `json:"name"`
-		Type         string `json:"type"`
-		Collection   string `json:"collection"`
-		NewSignature string `json:"newSignature"`
-	} `json:"changes"`
-}
-
-type DatabaseConfig struct {
-	Driver     string `json:"driver"`
-	Translator string `json:"translator,omitempty"`
-	ConnectURL string `json:"connectURL"`
-	Username   string `json:"username,omitempty"`
-	Password   any    `json:"password,omitempty"`
-}
-
-type TagProviderConfig struct {
-	Type        string `json:"type"`
-	Description string `json:"description,omitempty"`
-}
-
-type UserSourceProfile struct {
-	Type               string `json:"type"`
-	FailoverProfile    string `json:"failoverProfile,omitempty"`
-	FailoverMode       string `json:"failoverMode,omitempty"`
-	ScheduleRestricted bool   `json:"scheduleRestricted,omitempty"`
-}
-
-type UserSourceConfig struct {
-	Profile UserSourceProfile `json:"profile"`
-}
-
-type Project struct {
-	Name             string `json:"name,omitempty"`
-	Description      string `json:"description,omitempty"`
-	Title            string `json:"title,omitempty"`
-	Enabled          bool   `json:"enabled,omitempty"`
-	Parent           string `json:"parent,omitempty"`
-	Inheritable      bool   `json:"inheritable,omitempty"`
-	DefaultDB        string `json:"defaultDb,omitempty"`
-	TagProvider      string `json:"tagProvider,omitempty"`
-	UserSource       string `json:"userSource,omitempty"`
-	IdentityProvider string `json:"identityProvider,omitempty"`
-}
-
-type AuditProfileSettings struct {
-	DatabaseName          string `json:"databaseName,omitempty"`
-	PruneEnabled          bool   `json:"pruneEnabled,omitempty"`
-	AutoCreate            bool   `json:"autoCreate,omitempty"`
-	TableName             string `json:"tableName,omitempty"`
-	RemoteServer          string `json:"remoteServer,omitempty"`
-	RemoteProfile         string `json:"remoteProfile,omitempty"`
-	EnableStoreAndForward bool   `json:"enableStoreAndForward,omitempty"`
-}
-
-type AuditProfileProfile struct {
-	Type          string `json:"type"`
-	RetentionDays int    `json:"retentionDays,omitempty"`
-}
-
-type AuditProfileConfig struct {
-	Profile  AuditProfileProfile  `json:"profile"`
-	Settings AuditProfileSettings `json:"settings"`
-}
-
-type AlarmNotificationProfileProfile struct {
-	Type string `json:"type"`
-}
-
-type AlarmNotificationProfileConfig struct {
-	Profile  AlarmNotificationProfileProfile `json:"profile"`
-	Settings map[string]any                  `json:"settings"`
-}
-
-type OpcUaConnectionEndpoint struct {
-	DiscoveryURL   string `json:"discoveryUrl"`
-	EndpointURL    string `json:"endpointUrl"`
-	SecurityPolicy string `json:"securityPolicy"`
-	SecurityMode   string `json:"securityMode"`
-}
-
-type OpcUaConnectionSettings struct {
-	Endpoint OpcUaConnectionEndpoint `json:"endpoint"`
-}
-
-type OpcUaConnectionProfile struct {
-	Type string `json:"type"`
-}
-
-type OpcUaConnectionConfig struct {
-	Profile  OpcUaConnectionProfile  `json:"profile"`
-	Settings OpcUaConnectionSettings `json:"settings"`
-}
-
-type AlarmJournalProfile struct {
-	Type      string `json:"type"`
-	QueryOnly bool   `json:"queryOnly,omitempty"`
-}
-
-type AlarmJournalSettings struct {
-	Datasource    string `json:"datasource,omitempty"`
-	RemoteGateway *struct {
-		TargetServer  string `json:"targetServer,omitempty"`
-		TargetJournal string `json:"targetJournal,omitempty"`
-	} `json:"remoteGateway,omitempty"`
-	Advanced *struct {
-		TableName          string `json:"tableName,omitempty"`
-		DataTableName      string `json:"dataTableName,omitempty"`
-		UseStoreAndForward bool   `json:"useStoreAndForward,omitempty"`
-	} `json:"advanced,omitempty"`
-	Events *struct {
-		MinPriority            string `json:"minPriority,omitempty"`
-		StoreShelvedEvents     bool   `json:"storeShelvedEvents,omitempty"`
-		StoreFromEnabledChange bool   `json:"storeFromEnabledChange,omitempty"`
-	} `json:"events,omitempty"`
-}
-
-type AlarmJournalConfig struct {
-	Profile  AlarmJournalProfile  `json:"profile"`
-	Settings AlarmJournalSettings `json:"settings"`
-}
-
-type SMTPProfileSettingsClassic struct {
-	Hostname        string `json:"hostname"`
-	Port            int    `json:"port"`
-	UseSslPort      bool   `json:"useSslPort"`
-	StartTlsEnabled bool   `json:"startTlsEnabled"`
-	Username        string `json:"username,omitempty"`
-	Password        any    `json:"password,omitempty"`
-}
-
-type SMTPProfileSettings struct {
-	Settings *SMTPProfileSettingsClassic `json:"settings,omitempty"`
-}
-
-type SMTPProfileProfile struct {
-	Type string `json:"type"`
-}
-
-type SMTPProfileConfig struct {
-	Profile  SMTPProfileProfile  `json:"profile"`
-	Settings SMTPProfileSettings `json:"settings"`
-}
-
-type StoreAndForwardMaintenancePolicy struct {
-	Action string `json:"action"`
-	Limit  struct {
-		LimitType string `json:"limitType"`
-		Value     int    `json:"value"`
-	} `json:"limit"`
-}
-
-type StoreAndForwardConfig struct {
-	TimeThresholdMs            int                               `json:"timeThresholdMs"`
-	ForwardRateMs              int                               `json:"forwardRateMs"`
-	ForwardingPolicy           string                            `json:"forwardingPolicy"`
-	ForwardingSchedule         string                            `json:"forwardingSchedule,omitempty"`
-	IsThirdParty               bool                              `json:"isThirdParty"`
-	DataThreshold              int                               `json:"dataThreshold"`
-	BatchSize                  int                               `json:"batchSize"`
-	ScanRateMs                 int                               `json:"scanRateMs"`
-	PrimaryMaintenancePolicy   *StoreAndForwardMaintenancePolicy `json:"primaryMaintenancePolicy,omitempty"`
-	SecondaryMaintenancePolicy *StoreAndForwardMaintenancePolicy `json:"secondaryMaintenancePolicy,omitempty"`
-}
-
-type IdentityProviderAuthMethod struct {
-	Type   string `json:"type"`
-	Config any    `json:"config"`
-}
-
-type IdentityProviderInternalConfig struct {
-	UserSource               string                       `json:"userSource"`
-	AuthMethods              []IdentityProviderAuthMethod `json:"authMethods"`
-	SessionInactivityTimeout float64                      `json:"sessionInactivityTimeout"`
-	SessionExp               float64                      `json:"sessionExp"`
-	RememberMeExp            float64                      `json:"rememberMeExp"`
-}
-
-type IgnitionSecret struct {
-	Type string `json:"type"`
-	Data any    `json:"data"`
-}
-
-type IdentityProviderOidcConfig struct {
-	ClientId                   string          `json:"clientId"`
-	ClientSecret               *IgnitionSecret `json:"clientSecret,omitempty"`
-	ProviderId                 string          `json:"providerId"`
-	AuthorizationEndpoint      string          `json:"authorizationEndpoint"`
-	TokenEndpoint              string          `json:"tokenEndpoint"`
-	JsonWebKeysEndpoint        string          `json:"jsonWebKeysEndpoint"`
-	JsonWebKeysEndpointEnabled bool            `json:"jsonWebKeysEndpointEnabled"`
-	UserInfoEndpoint           string          `json:"userInfoEndpoint,omitempty"`
-	EndSessionEndpoint         string          `json:"endSessionEndpoint,omitempty"`
-}
-
-type IdentityProviderSamlConfig struct {
-	IdpEntityId                    string   `json:"idpEntityId"`
-	SpEntityId                     string   `json:"spEntityId,omitempty"`
-	SpEntityIdEnabled              bool     `json:"spEntityIdEnabled"`
-	AcsBinding                     string   `json:"acsBinding"`
-	NameIdFormat                   string   `json:"nameIdFormat"`
-	SsoServiceConfig               struct {
-		Uri     string `json:"uri"`
-		Binding string `json:"binding"`
-	} `json:"ssoServiceConfig"`
-	ForceAuthnEnabled              bool     `json:"forceAuthnEnabled"`
-	ResponseSignaturesRequired     bool     `json:"responseSignaturesRequired"`
-	AssertionSignaturesRequired    bool     `json:"assertionSignaturesRequired"`
-	IdpMetadataUrl                 string   `json:"idpMetadataUrl,omitempty"`
-	IdpMetadataUrlEnabled          bool     `json:"idpMetadataUrlEnabled"`
-	SignatureVerifyingCertificates []string `json:"signatureVerifyingCertificates"`
-	SignatureVerifyingKeys         []any    `json:"signatureVerifyingKeys"`
-}
-
-type IdentityProviderConfig struct {
-	Type   string `json:"type"`
-	Config any    `json:"config"`
-}
-
-type GanOutgoingConfig struct {
-	Host                     string  `json:"host"`
-	Port                     int     `json:"port"`
-	UseSSL                   bool    `json:"useSSL"`
-	PingRateMillis           float64 `json:"pingRateMillis,omitempty"`
-	PingTimeoutMillis        float64 `json:"pingTimeoutMillis,omitempty"`
-	PingMaxMissed            float64 `json:"pingMaxMissed,omitempty"`
-	WsTimeoutMillis          float64 `json:"wsTimeoutMillis,omitempty"`
-	HttpConnectTimeoutMillis float64 `json:"httpConnectTimeoutMillis,omitempty"`
-	HttpReadTimeoutMillis    float64 `json:"httpReadTimeoutMillis,omitempty"`
-	SendThreads              float64 `json:"sendThreads,omitempty"`
-	ReceiveThreads           float64 `json:"receiveThreads,omitempty"`
-}
-
-type RedundancyConfig struct {
-	Role                string `json:"role"`
-	ActiveHistoryLevel  string `json:"activeHistoryLevel"`
-	JoinWaitTime        int    `json:"joinWaitTime"`
-	RecoveryMode        string `json:"recoveryMode"`
-	AllowHistoryCleanup bool   `json:"allowHistoryCleanup"`
-	GatewayNetworkSetup *struct {
-		Host               string  `json:"host,omitempty"`
-		Port               int     `json:"port,omitempty"`
-		EnableSsl          bool    `json:"enableSsl,omitempty"`
-		PingRate           float64 `json:"pingRate,omitempty"`
-		PingTimeout        float64 `json:"pingTimeout,omitempty"`
-		PingMaxMissed      float64 `json:"pingMaxMissed,omitempty"`
-		WebsocketTimeout   float64 `json:"websocketTimeout,omitempty"`
-		HttpConnectTimeout float64 `json:"httpConnectTimeout,omitempty"`
-		HttpReadTimeout    float64 `json:"httpReadTimeout,omitempty"`
-		SendThreads        float64 `json:"sendThreads,omitempty"`
-		ReceiveThreads     float64 `json:"receiveThreads,omitempty"`
-	} `json:"gatewayNetworkSetup,omitempty"`
-}
-
-type GanGeneralSettingsConfig struct {
-	RequireSSL                  bool    `json:"requireSSL"`
-	RequireTwoWayAuth           bool    `json:"requireTwoWayAuth"`
-	AllowIncoming               bool    `json:"allowIncoming"`
-	SecurityPolicy              string  `json:"securityPolicy"`
-	Whitelist                   string  `json:"whitelist,omitempty"`
-	AllowedProxyHops            float64 `json:"allowedProxyHops"`
-	WebsocketSessionIdleTimeout float64 `json:"websocketSessionIdleTimeout"`
-	TempFilesMaxAgeHours        float64 `json:"tempFilesMaxAgeHours"`
-}
-
-type DeviceConfig map[string]any
 
 func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 	rc := retryablehttp.NewClient()
@@ -373,8 +133,6 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body []byte
 
 	return bodyBytes, nil
 }
-
-// Generic Helpers
 
 func (c *Client) GetResource(ctx context.Context, resourceType, name string, dest any) error {
 	return c.GetResourceWithModule(ctx, "ignition", resourceType, name, dest)
@@ -454,8 +212,6 @@ func (c *Client) unmarshalResourceResponse(ctx context.Context, module, resource
 
 	return json.Unmarshal(rawItems[0], dest)
 }
-
-// Simplified Typed Methods using helpers
 
 func getR[T any](ctx context.Context, c *Client, m, t, n string) (*ResourceResponse[T], error) {
 	var r ResourceResponse[T]
@@ -693,8 +449,6 @@ func (c *Client) DeleteDevice(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", n, s)
 }
 
-// Projects (Keep custom logic for wait)
-
 func (c *Client) GetProject(ctx context.Context, name string) (*Project, error) {
 	body, err := c.doRequest(ctx, http.MethodGet, "/data/api/v1/projects/find/"+name, nil)
 	if err != nil {
@@ -726,21 +480,20 @@ func (c *Client) DeleteProject(ctx context.Context, name string) error {
 }
 
 func (c *Client) waitForProject(ctx context.Context, name string) (*Project, error) {
-		ticker := time.NewTicker(200 * time.Millisecond)
-		defer ticker.Stop()
-		timeout := time.After(10 * time.Second)
-	
-		for {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-timeout:
-				return c.GetProject(ctx, name)
-			case <-ticker.C:
-				if p, err := c.GetProject(ctx, name); err == nil {
-					return p, nil
-				}
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.After(10 * time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-timeout:
+			return c.GetProject(ctx, name)
+		case <-ticker.C:
+			if p, err := c.GetProject(ctx, name); err == nil {
+				return p, nil
 			}
 		}
 	}
-	
+}
