@@ -6,7 +6,7 @@ services:
       - "8088:8088"
     environment:
       - ACCEPT_IGNITION_EULA=Y
-      - GATEWAY_ADMIN_PASSWORD=admin
+      - GATEWAY_ADMIN_PASSWORD=password123
       - GATEWAY_ADMIN_USERNAME=admin
       - IGNITION_EDITION=standard
     volumes:

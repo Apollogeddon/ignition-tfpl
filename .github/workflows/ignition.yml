@@ -11,20 +11,7 @@ jobs:
   acceptance:
     name: Ignition 8.3 Acceptance Tests
     runs-on: ubuntu-latest
-    if: ${{ secrets.IGNITION_TOKEN != '' }}
     
-    services:
-      ignition:
-        # Using the official image. Note: 8.3.0 is used as a placeholder 
-        # for the specific version you intend to test.
-        image: inductiveautomation/ignition:8.3.0
-        ports:
-          - 8088:8088
-        env:
-          ACCEPT_IGNITION_EULA: "Y"
-          GATEWAY_ADMIN_PASSWORD: password
-          IGNITION_EDITION: standard
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +20,19 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+
+      - name: Start Ignition Gateway with Pre-seeded DB
+        run: |
+          echo "Starting Ignition 8.3..."
+          # We mount the checked-out config.idb which contains the API token 'tofu:qbI_i9Iq_SmCfwUiiHSYmoJ0erTbFlEdzC4DfU1RFnc'
+          docker run -d \
+            --name ignition \
+            -p 8088:8088 \
+            -v ${{ github.workspace }}/test-assets/config.idb:/usr/local/bin/ignition/data/db/config.idb \
+            -e ACCEPT_IGNITION_EULA=Y \
+            -e GATEWAY_ADMIN_PASSWORD=password \
+            -e IGNITION_EDITION=standard \
+            inductiveautomation/ignition:8.3.0
 
       - name: Wait for Ignition Gateway
         run: |
@@ -46,7 +46,5 @@ jobs:
         env:
           TF_ACC: "1"
           IGNITION_HOST: "http://localhost:8088"
-          # This token must be configured in your GitHub Repository Secrets.
-          # Alternatively, for a purely ephemeral test, you could use a 
-          # provisioning script to generate one via the Ignition CLI/API.
-          IGNITION_TOKEN: ${{ secrets.IGNITION_TOKEN }}
+          # Token matches the one inside test-assets/config.idb
+          IGNITION_TOKEN: "tofu:qbI_i9Iq_SmCfwUiiHSYmoJ0erTbFlEdzC4DfU1RFnc"
