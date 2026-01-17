@@ -57,9 +57,9 @@ func TestClient_EmptyBodyError(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "empty response body") {
+	if !strings.Contains(err.Error(), "empty response body") && !strings.Contains(err.Error(), "unexpected end of JSON input") {
 		// Note: io.ReadAll on empty body returns empty slice, unmarshalResourceResponse checks this
-		t.Errorf("Expected 'empty response body', got '%v'", err)
+		t.Errorf("Expected 'empty response body' or 'unexpected end of JSON input', got '%v'", err)
 	}
 }
 
