@@ -327,7 +327,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 			{
 				Name:      "test-tp",
 				Signature: "sig-tp",
-				Config:    TagProviderConfig{Type: "standard"},
+				Config:    TagProviderConfig{Profile: TagProviderProfile{Type: "standard"}},
 			},
 		}
 		json.NewEncoder(w).Encode(response)
@@ -335,7 +335,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Type: "standard"}}
+	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Profile: TagProviderProfile{Type: "standard"}}}
 	
 	_, err := c.CreateTagProvider(context.Background(), tp)
 	if err != nil {
@@ -433,6 +433,261 @@ func TestClient_RedundancyOperations(t *testing.T) {
 	err = c.UpdateRedundancyConfig(context.Background(), *config)
 	if err != nil {
 		t.Errorf("UpdateRedundancyConfig failed: %v", err)
+	}
+}
+
+func TestClient_AlarmJournalOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[AlarmJournalConfig]{
+				Name:      "test-journal",
+				Signature: "sig-journal",
+				Config:    AlarmJournalConfig{Profile: AlarmJournalProfile{Type: "database"}},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[AlarmJournalConfig]{
+			{
+				Name:      "test-journal",
+				Signature: "sig-journal",
+				Config:    AlarmJournalConfig{Profile: AlarmJournalProfile{Type: "database"}},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+	
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[AlarmJournalConfig]{Name: "test-journal"}
+	
+	if _, err := c.CreateAlarmJournal(context.Background(), item); err != nil {
+		t.Errorf("CreateAlarmJournal failed: %v", err)
+	}
+	if _, err := c.UpdateAlarmJournal(context.Background(), item); err != nil {
+		t.Errorf("UpdateAlarmJournal failed: %v", err)
+	}
+	if _, err := c.GetAlarmJournal(context.Background(), "test-journal"); err != nil {
+		t.Errorf("GetAlarmJournal failed: %v", err)
+	}
+	if err := c.DeleteAlarmJournal(context.Background(), "test-journal", "sig"); err != nil {
+		t.Errorf("DeleteAlarmJournal failed: %v", err)
+	}
+}
+
+func TestClient_SMTPProfileOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[SMTPProfileConfig]{
+				Name:      "test-smtp",
+				Signature: "sig-smtp",
+				Config:    SMTPProfileConfig{Profile: SMTPProfileProfile{Type: "classic"}},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[SMTPProfileConfig]{
+			{
+				Name:      "test-smtp",
+				Signature: "sig-smtp",
+				Config:    SMTPProfileConfig{Profile: SMTPProfileProfile{Type: "classic"}},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[SMTPProfileConfig]{Name: "test-smtp"}
+	
+	if _, err := c.CreateSMTPProfile(context.Background(), item); err != nil {
+		t.Errorf("CreateSMTPProfile failed: %v", err)
+	}
+	if _, err := c.UpdateSMTPProfile(context.Background(), item); err != nil {
+		t.Errorf("UpdateSMTPProfile failed: %v", err)
+	}
+	if _, err := c.GetSMTPProfile(context.Background(), "test-smtp"); err != nil {
+		t.Errorf("GetSMTPProfile failed: %v", err)
+	}
+	if err := c.DeleteSMTPProfile(context.Background(), "test-smtp", "sig"); err != nil {
+		t.Errorf("DeleteSMTPProfile failed: %v", err)
+	}
+}
+
+func TestClient_StoreAndForwardOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[StoreAndForwardConfig]{
+				Name:      "test-sf",
+				Signature: "sig-sf",
+				Config:    StoreAndForwardConfig{ForwardingPolicy: "ALL"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[StoreAndForwardConfig]{
+			{
+				Name:      "test-sf",
+				Signature: "sig-sf",
+				Config:    StoreAndForwardConfig{ForwardingPolicy: "ALL"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[StoreAndForwardConfig]{Name: "test-sf"}
+	
+	if _, err := c.CreateStoreAndForward(context.Background(), item); err != nil {
+		t.Errorf("CreateStoreAndForward failed: %v", err)
+	}
+	if _, err := c.UpdateStoreAndForward(context.Background(), item); err != nil {
+		t.Errorf("UpdateStoreAndForward failed: %v", err)
+	}
+	if _, err := c.GetStoreAndForward(context.Background(), "test-sf"); err != nil {
+		t.Errorf("GetStoreAndForward failed: %v", err)
+	}
+	if err := c.DeleteStoreAndForward(context.Background(), "test-sf", "sig"); err != nil {
+		t.Errorf("DeleteStoreAndForward failed: %v", err)
+	}
+}
+
+func TestClient_IdentityProviderOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[IdentityProviderConfig]{
+				Name:      "test-idp",
+				Signature: "sig-idp",
+				Config:    IdentityProviderConfig{Type: "Ignition"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[IdentityProviderConfig]{
+			{
+				Name:      "test-idp",
+				Signature: "sig-idp",
+				Config:    IdentityProviderConfig{Type: "Ignition"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[IdentityProviderConfig]{Name: "test-idp"}
+	
+	if _, err := c.CreateIdentityProvider(context.Background(), item); err != nil {
+		t.Errorf("CreateIdentityProvider failed: %v", err)
+	}
+	if _, err := c.UpdateIdentityProvider(context.Background(), item); err != nil {
+		t.Errorf("UpdateIdentityProvider failed: %v", err)
+	}
+	if _, err := c.GetIdentityProvider(context.Background(), "test-idp"); err != nil {
+		t.Errorf("GetIdentityProvider failed: %v", err)
+	}
+	if err := c.DeleteIdentityProvider(context.Background(), "test-idp", "sig"); err != nil {
+		t.Errorf("DeleteIdentityProvider failed: %v", err)
+	}
+}
+
+func TestClient_GanOutgoingOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[GanOutgoingConfig]{
+				Name:      "test-gan",
+				Signature: "sig-gan",
+				Config:    GanOutgoingConfig{Host: "localhost"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[GanOutgoingConfig]{
+			{
+				Name:      "test-gan",
+				Signature: "sig-gan",
+				Config:    GanOutgoingConfig{Host: "localhost"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[GanOutgoingConfig]{Name: "test-gan"}
+	
+	if _, err := c.CreateGanOutgoing(context.Background(), item); err != nil {
+		t.Errorf("CreateGanOutgoing failed: %v", err)
+	}
+	if _, err := c.UpdateGanOutgoing(context.Background(), item); err != nil {
+		t.Errorf("UpdateGanOutgoing failed: %v", err)
+	}
+	if _, err := c.GetGanOutgoing(context.Background(), "test-gan"); err != nil {
+		t.Errorf("GetGanOutgoing failed: %v", err)
+	}
+	if err := c.DeleteGanOutgoing(context.Background(), "test-gan", "sig"); err != nil {
+		t.Errorf("DeleteGanOutgoing failed: %v", err)
+	}
+}
+
+func TestClient_GanGeneralSettingsOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := ResourceResponse[GanGeneralSettingsConfig]{
+			Name:   "settings",
+			Config: GanGeneralSettingsConfig{AllowIncoming: true},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[GanGeneralSettingsConfig]{Name: "settings"}
+	
+	if _, err := c.UpdateGanGeneralSettings(context.Background(), item); err != nil {
+		t.Errorf("UpdateGanGeneralSettings failed: %v", err)
+	}
+	if _, err := c.GetGanGeneralSettings(context.Background()); err != nil {
+		t.Errorf("GetGanGeneralSettings failed: %v", err)
+	}
+}
+
+func TestClient_DeviceOperations(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			response := ResourceResponse[DeviceConfig]{
+				Name:      "test-device",
+				Signature: "sig-device",
+				Config:    DeviceConfig{"type": "Simulator"},
+			}
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		response := []ResourceResponse[DeviceConfig]{
+			{
+				Name:      "test-device",
+				Signature: "sig-device",
+				Config:    DeviceConfig{"type": "Simulator"},
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	item := ResourceResponse[DeviceConfig]{Name: "test-device"}
+	
+	if _, err := c.CreateDevice(context.Background(), item); err != nil {
+		t.Errorf("CreateDevice failed: %v", err)
+	}
+	if _, err := c.UpdateDevice(context.Background(), item); err != nil {
+		t.Errorf("UpdateDevice failed: %v", err)
+	}
+	if _, err := c.GetDevice(context.Background(), "test-device"); err != nil {
+		t.Errorf("GetDevice failed: %v", err)
+	}
+	if err := c.DeleteDevice(context.Background(), "test-device", "sig"); err != nil {
+		t.Errorf("DeleteDevice failed: %v", err)
 	}
 }
 

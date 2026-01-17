@@ -44,6 +44,11 @@ func TestAccAuditProfileResource(t *testing.T) {
 					resource.TestCheckResourceAttr("ignition_audit_profile.test", "name", rName),
 				),
 			},
+			{
+				ResourceName:      "ignition_audit_profile.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

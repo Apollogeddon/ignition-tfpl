@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccProjectResource(t *testing.T) {
+func TestAccStoreForwardResource(t *testing.T) {
 	if os.Getenv("IGNITION_HOST") == "" || os.Getenv("IGNITION_TOKEN") == "" {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
@@ -21,13 +21,15 @@ func TestAccProjectResource(t *testing.T) {
 		ProtoV6ProviderFactories: provider.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccProjectResourceConfig(rName),
+				Config: testAccStoreForwardResourceConfig(rName, "ALL", 100),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_project.test", "name", rName),
+					resource.TestCheckResourceAttr("ignition_store_forward.test", "name", rName),
+					resource.TestCheckResourceAttr("ignition_store_forward.test", "forwarding_policy", "ALL"),
+					resource.TestCheckResourceAttr("ignition_store_forward.test", "batch_size", "100"),
 				),
 			},
 			{
-				ResourceName:      "ignition_project.test",
+				ResourceName:      "ignition_store_forward.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -35,12 +37,15 @@ func TestAccProjectResource(t *testing.T) {
 	})
 }
 
-func testAccProjectResourceConfig(name string) string {
+func testAccStoreForwardResourceConfig(name, policy string, batchSize int) string {
 	return fmt.Sprintf(`
 provider "ignition" {}
 
-resource "ignition_project" "test" {
-  name        = %[1]q
+resource "ignition_store_forward" "test" {
+  name              = %[1]q
+  forwarding_policy = %[2]q
+  batch_size        = %[3]d
+  time_threshold_ms = 1000
 }
-`, name)
+`, name, policy, batchSize)
 }

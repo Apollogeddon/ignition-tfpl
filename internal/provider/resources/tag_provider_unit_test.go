@@ -29,7 +29,9 @@ func TestUnitTagProviderResource(t *testing.T) {
 				Name:      "test-tags",
 				Signature: currentSignature,
 				Config: client.TagProviderConfig{
-					Type:        "standard",
+					Profile: client.TagProviderProfile{
+						Type: "standard",
+					},
 					Description: currentDescription,
 				},
 			}, nil

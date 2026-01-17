@@ -50,7 +50,9 @@ func TestUnitDataSources(t *testing.T) {
 			return &client.ResourceResponse[client.TagProviderConfig]{
 				Name: name,
 				Config: client.TagProviderConfig{
-					Type: "standard",
+					Profile: client.TagProviderProfile{
+						Type: "standard",
+					},
 				},
 			}, nil
 		},

@@ -30,14 +30,18 @@ func TestAccUserSourceResource(t *testing.T) {
 			},
 			{
 				Config: testAccUserSourceResourceConfig(rName, "INTERNAL", "Updated User Source"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_user_source.test", "description", "Updated User Source"),
-				),
-			},
-		},
-	})
-}
-
+				                Check: resource.ComposeAggregateTestCheckFunc(
+				                    resource.TestCheckResourceAttr("ignition_user_source.test", "description", "Updated User Source"),
+				                ),
+				            },
+				            {
+				                ResourceName:      "ignition_user_source.test",
+				                ImportState:       true,
+				                ImportStateVerify: true,
+				            },
+				        },
+				    })
+				}
 func testAccUserSourceResourceConfig(name, typeVal, desc string) string {
 	return fmt.Sprintf(`
 provider "ignition" {}

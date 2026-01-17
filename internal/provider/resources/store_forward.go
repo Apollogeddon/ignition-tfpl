@@ -231,6 +231,7 @@ func (r *StoreAndForwardResource) MapPlanToClient(ctx context.Context, model *St
 
 func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, name string, config *client.StoreAndForwardConfig, model *StoreAndForwardResourceModel) error {
 	model.Name = types.StringValue(name)
+	model.TimeThresholdMs = types.Int64Value(int64(config.TimeThresholdMs))
 	model.ForwardRateMs = types.Int64Value(int64(config.ForwardRateMs))
 	model.ForwardingPolicy = types.StringValue(config.ForwardingPolicy)
 	model.ForwardingSchedule = base.StringToNullableString(config.ForwardingSchedule)
@@ -239,7 +240,7 @@ func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, name str
 	model.BatchSize = types.Int64Value(int64(config.BatchSize))
 	model.ScanRateMs = types.Int64Value(int64(config.ScanRateMs))
 
-	if config.PrimaryMaintenancePolicy != nil {
+	if config.PrimaryMaintenancePolicy != nil && model.PrimaryPolicy != nil {
 		model.PrimaryPolicy = &MaintenancePolicyModel{
 			Action:    types.StringValue(config.PrimaryMaintenancePolicy.Action),
 			LimitType: types.StringValue(config.PrimaryMaintenancePolicy.Limit.LimitType),
@@ -249,7 +250,7 @@ func (r *StoreAndForwardResource) MapClientToState(ctx context.Context, name str
 		model.PrimaryPolicy = nil
 	}
 
-	if config.SecondaryMaintenancePolicy != nil {
+	if config.SecondaryMaintenancePolicy != nil && model.SecondaryPolicy != nil {
 		model.SecondaryPolicy = &MaintenancePolicyModel{
 			Action:    types.StringValue(config.SecondaryMaintenancePolicy.Action),
 			LimitType: types.StringValue(config.SecondaryMaintenancePolicy.Limit.LimitType),

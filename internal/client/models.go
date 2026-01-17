@@ -59,9 +59,13 @@ type DatabaseConfig struct {
 	Password   any    `json:"password,omitempty"`
 }
 
-type TagProviderConfig struct {
+type TagProviderProfile struct {
 	Type        string `json:"type"`
-	Description string `json:"description,omitempty"`
+}
+
+type TagProviderConfig struct {
+	Profile     TagProviderProfile `json:"profile"`
+	Description string             `json:"description,omitempty"`
 }
 
 type UserSourceProfile struct {

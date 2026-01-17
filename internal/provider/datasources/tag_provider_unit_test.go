@@ -17,7 +17,9 @@ func TestUnitTagProviderDataSource(t *testing.T) {
 			return &client.ResourceResponse[client.TagProviderConfig]{
 				Name: name,
 				Config: client.TagProviderConfig{
-					Type:        "standard",
+					Profile: client.TagProviderProfile{
+						Type: "standard",
+					},
 					Description: "A mock tag provider",
 				},
 			}, nil

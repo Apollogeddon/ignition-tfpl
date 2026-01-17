@@ -104,14 +104,16 @@ func (r *TagProviderResource) Configure(ctx context.Context, req resource.Config
 
 func (r *TagProviderResource) MapPlanToClient(ctx context.Context, model *TagProviderResourceModel) (client.TagProviderConfig, error) {
 	return client.TagProviderConfig{
-		Type:        model.Type.ValueString(),
+		Profile: client.TagProviderProfile{
+			Type: model.Type.ValueString(),
+		},
 		Description: model.Description.ValueString(),
 	}, nil
 }
 
 func (r *TagProviderResource) MapClientToState(ctx context.Context, name string, config *client.TagProviderConfig, model *TagProviderResourceModel) error {
 	model.Name = types.StringValue(name)
-	model.Type = types.StringValue(config.Type)
+	model.Type = types.StringValue(config.Profile.Type)
 	model.Description = base.StringToNullableString(config.Description)
 	return nil
 }

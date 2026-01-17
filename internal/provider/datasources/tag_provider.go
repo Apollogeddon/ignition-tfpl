@@ -83,7 +83,7 @@ func (d *TagProviderDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	data.Type = types.StringValue(res.Config.Type)
+	data.Type = types.StringValue(res.Config.Profile.Type)
 	if res.Config.Description != "" {
 		data.Description = types.StringValue(res.Config.Description)
 	} else {

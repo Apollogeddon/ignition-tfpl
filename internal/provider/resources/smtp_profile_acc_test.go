@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-func TestAccProjectResource(t *testing.T) {
+func TestAccSMTPProfileResource(t *testing.T) {
 	if os.Getenv("IGNITION_HOST") == "" || os.Getenv("IGNITION_TOKEN") == "" {
 		t.Skip("Skipping acceptance test: IGNITION_HOST and/or IGNITION_TOKEN not set")
 	}
@@ -21,26 +21,31 @@ func TestAccProjectResource(t *testing.T) {
 		ProtoV6ProviderFactories: provider.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccProjectResourceConfig(rName),
+				Config: testAccSMTPProfileResourceConfig(rName, "smtp.example.com", 25),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("ignition_project.test", "name", rName),
+					resource.TestCheckResourceAttr("ignition_smtp_profile.test", "name", rName),
+					resource.TestCheckResourceAttr("ignition_smtp_profile.test", "hostname", "smtp.example.com"),
+					resource.TestCheckResourceAttr("ignition_smtp_profile.test", "port", "25"),
 				),
 			},
 			{
-				ResourceName:      "ignition_project.test",
+				ResourceName:      "ignition_smtp_profile.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
 }
 
-func testAccProjectResourceConfig(name string) string {
+func testAccSMTPProfileResourceConfig(name, hostname string, port int) string {
 	return fmt.Sprintf(`
 provider "ignition" {}
 
-resource "ignition_project" "test" {
-  name        = %[1]q
+resource "ignition_smtp_profile" "test" {
+  name     = %[1]q
+  hostname = %[2]q
+  port     = %[3]d
 }
-`, name)
+`, name, hostname, port)
 }
