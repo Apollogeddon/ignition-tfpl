@@ -11,6 +11,7 @@ jobs:
   acceptance:
     name: Ignition 8.3 Acceptance Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +22,27 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
-      - name: Start Ignition Gateway with Pre-seeded DB
+      - name: Start Ignition Gateway with Pre-seeded Backup
         run: |
-          echo "Starting Ignition 8.3..."
-          # We mount the checked-out config.idb which contains the API token 'tofu:qbI_i9Iq_SmCfwUiiHSYmoJ0erTbFlEdzC4DfU1RFnc'
+          echo "Starting Ignition 8.3.2..."
+          # We mount the checked-out ignition.gwbk which contains the API token
           docker run -d \
-            --name ignition \
+            --name ignition-acc \
             -p 8088:8088 \
-            -v ${{ github.workspace }}/test-assets/config.idb:/usr/local/bin/ignition/data/db/config.idb \
+            -v ${{ github.workspace }}/assets/ignition.gwbk:/restore.gwbk \
             -e ACCEPT_IGNITION_EULA=Y \
             -e GATEWAY_ADMIN_PASSWORD=password \
             -e IGNITION_EDITION=standard \
-            inductiveautomation/ignition:8.3.0
+            inductiveautomation/ignition:8.3.2
+          
+          echo "Waiting for Gateway to be ready for restore..."
+          timeout 120s bash -c 'until curl -s http://localhost:8088/system/gwinfo; do echo "Still waiting for gateway..."; sleep 5; done'
+          
+          echo "Triggering manual restore..."
+          docker exec ignition-acc ./gwcmd.sh --restore /restore.gwbk --promptyes
+          
+          echo "Restarting Gateway..."
+          docker restart ignition-acc
 
       - name: Wait for Ignition Gateway
         run: |
@@ -46,5 +56,5 @@ jobs:
         env:
           TF_ACC: "1"
           IGNITION_HOST: "http://localhost:8088"
-          # Token matches the one inside test-assets/config.idb
+          # Token matches the one inside assets/config.idb
           IGNITION_TOKEN: "tofu:qbI_i9Iq_SmCfwUiiHSYmoJ0erTbFlEdzC4DfU1RFnc"
