@@ -13,7 +13,7 @@ func init() {
 		os.Setenv("IGNITION_HOST", "http://localhost:8088")
 	}
 	if os.Getenv("IGNITION_TOKEN") == "" {
-		os.Setenv("IGNITION_TOKEN", "tofu:qbI_i9Iq_SmCfwUiiHSYmoJ0erTbFlEdzC4DfU1RFnc")
+		os.Setenv("IGNITION_TOKEN", "terraform:bNxwTt2cyiFUwWFliYY6Fc5flj-AcdqCjfNqn_-Lw8A")
 	}
 }
 

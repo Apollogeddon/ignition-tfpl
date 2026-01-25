@@ -1,6 +1,6 @@
 services:
   ignition:
-    image: inductiveautomation/ignition:8.3
+    image: inductiveautomation/ignition:8.3.2
     container_name: ignition-tfpl
     ports:
       - "8088:8088"
@@ -10,9 +10,8 @@ services:
       - GATEWAY_ADMIN_USERNAME=admin
       - IGNITION_EDITION=standard
     volumes:
-      # Persist data so you don't lose your API token between restarts
-      - ignition:/usr/local/bin/ignition/data
-
-volumes:
-  ignition:
-    name: ignition-tfpl
+      - ./assets/ignition.gwbk:/restore.gwbk
+    post_start:
+      - command: /usr/local/bin/ignition/gwcmd.sh --restore /restore.gwbk --promptyes
+      - command: /usr/local/bin/ignition/gwcmd.sh --restart
+      
