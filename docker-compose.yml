@@ -12,6 +12,5 @@ services:
     volumes:
       - ./assets/ignition.gwbk:/restore.gwbk
     post_start:
-      - command: /usr/local/bin/ignition/gwcmd.sh --restore /restore.gwbk --promptyes
-      - command: /usr/local/bin/ignition/gwcmd.sh --restart
-      
+      - command: /usr/local/bin/ignition/gwcmd.sh -s /restore.gwbk -y
+      - command: /usr/local/bin/ignition/gwcmd.sh -r
