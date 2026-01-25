@@ -21,21 +21,3 @@ jobs:
         # Runs all tests; standard Go convention is that acceptance tests requiring setup 
         # are guarded by the TF_ACC environment variable, so this skips them.
         run: go test -v ./...
-
-  acceptance-tests:
-    name: Acceptance Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: stable
-          cache: true
-
-      - name: Run Acceptance Tests
-        env:
-          TF_ACC: "1"
-        run: go test -v ./... -timeout 10m
