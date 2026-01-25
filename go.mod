@@ -1,6 +1,6 @@
 module github.com/apollogeddon/ignition-tfpl
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
