@@ -1,0 +1,37 @@
+name: Orchestrator
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  testing:
+    name: Testing
+    uses: ./.github/workflows/testing.yaml
+    secrets: inherit
+
+  quality:
+    name: Quality Assurance
+    uses: ./.github/workflows/quality.yaml
+    secrets: inherit
+
+  ignition:
+    name: Ignition Acceptance
+    needs: [testing, quality]
+    uses: ./.github/workflows/ignition.yaml
+    secrets: inherit
+
+  release:
+    name: Release
+    needs: [testing, quality, ignition]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/release.yaml
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets: inherit
