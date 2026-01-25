@@ -117,7 +117,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body []byte
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -460,7 +460,10 @@ func (c *Client) GetProject(ctx context.Context, name string) (*Project, error) 
 }
 
 func (c *Client) CreateProject(ctx context.Context, p Project) (*Project, error) {
-	rb, _ := json.Marshal(p)
+	rb, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := c.doRequest(ctx, http.MethodPost, "/data/api/v1/projects", rb); err != nil {
 		return nil, err
 	}
@@ -468,7 +471,10 @@ func (c *Client) CreateProject(ctx context.Context, p Project) (*Project, error)
 }
 
 func (c *Client) UpdateProject(ctx context.Context, p Project) (*Project, error) {
-	rb, _ := json.Marshal(p)
+	rb, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := c.doRequest(ctx, http.MethodPut, "/data/api/v1/projects/"+p.Name, rb); err != nil {
 		return nil, err
 	}

@@ -199,7 +199,8 @@ func (r *AlarmJournalResource) MapClientToState(ctx context.Context, name string
 	model.TargetServer = types.StringNull()
 	model.TargetJournal = types.StringNull()
 
-	if config.Profile.Type == "DATASOURCE" {
+	switch config.Profile.Type {
+	case "DATASOURCE":
 		model.Datasource = types.StringValue(config.Settings.Datasource)
 		if config.Settings.Advanced != nil {
 			model.TableName = types.StringValue(config.Settings.Advanced.TableName)
@@ -207,7 +208,7 @@ func (r *AlarmJournalResource) MapClientToState(ctx context.Context, name string
 		if config.Settings.Events != nil {
 			model.MinPriority = types.StringValue(config.Settings.Events.MinPriority)
 		}
-	} else if config.Profile.Type == "REMOTE" {
+	case "REMOTE":
 		if config.Settings.RemoteGateway != nil {
 			model.TargetServer = types.StringValue(config.Settings.RemoteGateway.TargetServer)
 			model.TargetJournal = types.StringValue(config.Settings.RemoteGateway.TargetJournal)

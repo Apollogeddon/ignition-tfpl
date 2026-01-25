@@ -340,7 +340,8 @@ func (r *IdentityProviderResource) MapClientToState(ctx context.Context, name st
 
 	configBytes, _ := json.Marshal(config.Config)
 
-	if config.Type == "internal" {
+	switch config.Type {
+	case "internal":
 		var internalConfig client.IdentityProviderInternalConfig
 		if err := json.Unmarshal(configBytes, &internalConfig); err == nil {
 			model.UserSource = types.StringValue(internalConfig.UserSource)
@@ -348,7 +349,7 @@ func (r *IdentityProviderResource) MapClientToState(ctx context.Context, name st
 			model.SessionExp = types.Float64Value(internalConfig.SessionExp)
 			model.RememberMeExp = types.Float64Value(internalConfig.RememberMeExp)
 		}
-	} else if config.Type == "oidc" {
+	case "oidc":
 		var oidcConfig client.IdentityProviderOidcConfig
 		if err := json.Unmarshal(configBytes, &oidcConfig); err == nil {
 			model.ClientId = types.StringValue(oidcConfig.ClientId)
@@ -360,7 +361,7 @@ func (r *IdentityProviderResource) MapClientToState(ctx context.Context, name st
 			model.UserInfoEndpoint = base.StringToNullableString(oidcConfig.UserInfoEndpoint)
 			model.LogoutEndpoint = base.StringToNullableString(oidcConfig.EndSessionEndpoint)
 		}
-	} else if config.Type == "saml" {
+	case "saml":
 		var samlConfig client.IdentityProviderSamlConfig
 		if err := json.Unmarshal(configBytes, &samlConfig); err == nil {
 			model.IdpEntityId = types.StringValue(samlConfig.IdpEntityId)

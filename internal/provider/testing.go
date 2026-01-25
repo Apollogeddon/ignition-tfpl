@@ -10,10 +10,10 @@ import (
 func init() {
 	// Set default credentials for local testing with Docker if not already set
 	if os.Getenv("IGNITION_HOST") == "" {
-		os.Setenv("IGNITION_HOST", "http://localhost:8088")
+		_ = os.Setenv("IGNITION_HOST", "http://localhost:8088")
 	}
 	if os.Getenv("IGNITION_TOKEN") == "" {
-		os.Setenv("IGNITION_TOKEN", "terraform:bNxwTt2cyiFUwWFliYY6Fc5flj-AcdqCjfNqn_-Lw8A")
+		_ = os.Setenv("IGNITION_TOKEN", "terraform:bNxwTt2cyiFUwWFliYY6Fc5flj-AcdqCjfNqn_-Lw8A")
 	}
 }
 
