@@ -13,6 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     
+    env:
+      IGNITION_HOST: "http://localhost:8088"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -27,16 +30,15 @@ jobs:
           echo "Starting Ignition 8.3.2 via Docker Compose..."
           docker compose up -d
           
-          echo "Waiting for Gateway to be ready..."
+          echo "Waiting for Gateway to be ready at $IGNITION_HOST..."
           # The post_start hook in compose handles the restore and restart. 
           # We just need to wait for the final healthy state.
-          timeout 300s bash -c 'until curl -s -f http://localhost:8088/system/gwinfo; do echo "Still waiting..."; sleep 10; done'
+          timeout 300s bash -c "until curl -s -f $IGNITION_HOST/system/gwinfo; do echo 'Still waiting...'; sleep 10; done"
           echo "Ignition Gateway is up!"
 
       - name: Run Acceptance Tests
         run: go test -v ./internal/provider/...
         env:
           TF_ACC: "1"
-          IGNITION_HOST: "http://localhost:8088"
           # Token matches the one inside assets/config.idb
           IGNITION_TOKEN: "terraform:bNxwTt2cyiFUwWFliYY6Fc5flj-AcdqCjfNqn_-Lw8A"
