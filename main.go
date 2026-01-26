@@ -12,10 +12,8 @@ import (
 // Run the docs generation tool, check its repository for more information on how it works and how docs
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.24.0 generate --provider-name ignition
 
-var (
-	// these will be set by the linker
-	version string = "0.0.0"
-)
+// these will be set by the linker
+var version = "1.0.0"
 
 
 
