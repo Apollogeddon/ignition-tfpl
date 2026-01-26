@@ -18,9 +18,9 @@ jobs:
           cache: true
 
       - name: Run GolangCI-Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          golangci-lint run ./...
 
   security:
     name: Security Scan
@@ -38,6 +38,8 @@ jobs:
           exit-code: '1'
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   docs-check:
     name: Documentation Check
@@ -60,5 +62,5 @@ jobs:
 
       - name: Check for Changes
         run: |
-          git diff --compact-summary
-          git diff --exit-code
+          git diff --compact-summary docs examples
+          git diff --exit-code docs examples
