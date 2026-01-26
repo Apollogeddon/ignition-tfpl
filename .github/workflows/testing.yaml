@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  unit-tests:
+  testing:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -18,6 +18,4 @@ jobs:
           cache: true
 
       - name: Run Unit Tests
-        # Runs all tests; standard Go convention is that acceptance tests requiring setup 
-        # are guarded by the TF_ACC environment variable, so this skips them.
         run: go test -v ./...

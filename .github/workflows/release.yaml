@@ -8,8 +8,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  release-please:
-    name: Release Please
+  version:
     runs-on: ubuntu-latest
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
@@ -23,8 +22,8 @@ jobs:
 
   publish:
     name: Publish Provider
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    needs: version
+    if: needs.version.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
