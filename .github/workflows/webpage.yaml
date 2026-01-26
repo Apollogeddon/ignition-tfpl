@@ -34,12 +34,7 @@ jobs:
         run: cd webpage && npm ci
 
       - name: Migrate Docs
-        run: bash .github/scripts/migrate_docs.sh
-
-      - name: Copy Helm Index
-        run: |
-          mkdir -p webpage/public
-          cp index.yaml webpage/public/index.yaml
+        run: bash .github/scripts/document.sh
 
       - name: Build site
         run: cd webpage && npm run build
