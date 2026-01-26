@@ -41,3 +41,20 @@ jobs:
           exit-code: '1'
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Run Govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
