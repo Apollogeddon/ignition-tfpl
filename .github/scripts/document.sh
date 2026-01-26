@@ -1,13 +1,28 @@
 #!/bin/bash
 set -e
 
-# Function to transform frontmatter
-transform_frontmatter() {
-  local src_file="$1"
-  local dest_file="$2"
+# Ensure base directory exists
+mkdir -p webpage/src/content/docs/reference
+
+# Process all markdown files in docs/ recursively
+find docs -type f -name "*.md" | while read -r file; do
+  # Determine relative path and target destination
+  rel_path="${file#docs/}"
+  dest_path="webpage/src/content/docs/reference/$rel_path"
+  
+  # Create target subdirectory if it doesn't exist
+  mkdir -p "$(dirname "$dest_path")"
+  
+  # Special title handling for index.md
+  default_title="Reference"
+  if [[ "$rel_path" == "index.md" ]]; then
+    default_title="Ignition Provider"
+  fi
+  
+  echo "Migrating $file to $dest_path"
   
   # Extract title and description using awk
-  awk '
+  awk -v def_title="$default_title" ' 
     BEGIN { in_fm = 0; print_fm = 0; title = ""; desc = ""; }
     /^---$/ {
       if (in_fm == 0) { in_fm = 1; next; }
@@ -30,27 +45,11 @@ transform_frontmatter() {
     }
     print_fm == 1 {
       print "---";
-      print "title: \"" (title ? title : "Reference") "\"";
+      print "title: \"" (title ? title : def_title) "\"";
       print "description: \"" desc "\"";
       print "---";
       print_fm = 2;
     }
     print_fm == 2 { print; }
-  ' "$src_file" > "$dest_file"
-}
-
-# Ensure base directory exists
-mkdir -p webpage/src/content/docs/reference
-
-# Process all markdown files in docs/ recursively
-find docs -name "*.md" | while read -r file; do
-  # Determine relative path and target destination
-  rel_path="${file#docs/}"
-  dest_path="webpage/src/content/docs/reference/$rel_path"
-  
-  # Create target subdirectory if it doesn't exist
-  mkdir -p "$(dirname "$dest_path")"
-  
-  echo "Migrating $file to $dest_path"
-  transform_frontmatter "$file" "$dest_path"
+  ' "$file" > "$dest_path"
 done

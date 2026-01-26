@@ -33,6 +33,17 @@ jobs:
       - name: Install dependencies
         run: cd webpage && npm ci
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Generate Docs
+        run: |
+          go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.20.1
+          go generate ./...
+
       - name: Migrate Docs
         run: bash .github/scripts/document.sh
 
