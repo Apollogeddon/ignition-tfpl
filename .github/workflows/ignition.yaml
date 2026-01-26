@@ -1,11 +1,11 @@
-name: Acceptance Tests (Ignition 8.3)
+name: Ignition
 
 on:
   workflow_call:
   workflow_dispatch:
 
 jobs:
-  acceptance:
+  testing:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     

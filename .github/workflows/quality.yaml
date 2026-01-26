@@ -9,7 +9,7 @@ permissions:
   security-events: write
 
 jobs:
-  lint:
+  linting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: 'stable'
           cache: true
 
       - name: Run GolangCI-Lint
