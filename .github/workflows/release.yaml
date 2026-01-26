@@ -2,6 +2,7 @@ name: Release
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,7 +22,6 @@ jobs:
           release-type: go
 
   publish:
-    name: Publish Provider
     needs: version
     if: needs.version.outputs.releases_created == 'true'
     runs-on: ubuntu-latest

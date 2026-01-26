@@ -1,0 +1,54 @@
+---
+title: Ignition TF Plugin
+description: Enterprise-grade Terraform Plugin for configuring Inductive Automation's Ignition Perspective 8.3.
+template: splash
+hero:
+  tagline: Manage your Inductive Automation Ignition Gateway infrastructure as code.
+  image:
+    file: ../../assets/favicon.png
+  actions:
+    - text: Get Started
+      link: /ignition-helm/guides/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/apollogeddon/ignition-tfpl
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Quick Start
+
+Configure your provider and manage a project in seconds.
+
+```hcl
+provider "ignition" {
+  host  = "http://localhost:8088"
+  token = var.ignition_token
+}
+
+resource "ignition_project" "example" {
+  name        = "MyEnterpriseProject"
+  title       = "Enterprise Dashboard"
+  description = "Managed via Terraform"
+  enabled     = true
+}
+```
+
+## Why use this plugin?
+
+<CardGrid>
+	<Card title="Infrastructure as Code" icon="pencil">
+		Version control your Gateway configuration. Manage Projects, Database Connections, and Tag Providers alongside your cloud infrastructure.
+	</Card>
+	<Card title="Secure by Design" icon="lock">
+		Sensitive credentials are encrypted in-flight using Ignition's native encryption endpoints before being stored in state.
+	</Card>
+	<Card title="Drift Detection" icon="magnifier">
+		Detect manual changes made in the Designer or Gateway Web Interface and reconcile them automatically.
+	</Card>
+    <Card title="Enterprise Ready" icon="setting">
+		Support for complex Enterprise architectures including Redundancy, Gateway Networks, and Identity Providers (SAML/OIDC).
+	</Card>
+</CardGrid>

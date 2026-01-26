@@ -2,10 +2,10 @@ name: Testing
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   testing:
-    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

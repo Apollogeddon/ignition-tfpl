@@ -18,6 +18,9 @@ export default defineConfig({
 				{
 					label: 'Guides',
 					items: [
+						{ label: 'Installation', link: '/guides/installation/' },
+						{ label: 'Architecture', link: '/guides/architecture/' },
+						{ label: 'Capabilities', link: '/guides/capabilities/' },
 					],
 				},
 				{
