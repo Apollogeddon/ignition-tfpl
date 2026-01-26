@@ -1,10 +1,23 @@
 version: 2
 updates:
+  # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for Go Lang
   - package-ecosystem: "gomod"
     directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Maintain dependencies for the Astro site
+  - package-ecosystem: "npm"
+    directory: "/webpage"
     schedule:
       interval: "weekly"
