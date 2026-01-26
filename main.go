@@ -14,7 +14,7 @@ import (
 
 var (
 	// these will be set by the linker
-	version string = "dev"
+	version string = "0.0.0"
 )
 
 

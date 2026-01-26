@@ -19,7 +19,8 @@ jobs:
         uses: google-github-actions/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: go
+          config-file: .github/release.json
+          manifest-file: .github/.release.json
 
   publish:
     needs: version
