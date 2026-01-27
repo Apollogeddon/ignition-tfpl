@@ -30,7 +30,7 @@ type TagProviderResource struct {
 // TagProviderResourceModel describes the resource data model.
 type TagProviderResourceModel struct {
 	base.BaseResourceModel
-	Type        types.String `tfsdk:"type"`
+	Type types.String `tfsdk:"type"`
 }
 
 func (r *TagProviderResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

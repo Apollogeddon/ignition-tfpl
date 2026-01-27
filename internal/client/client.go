@@ -93,7 +93,7 @@ func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 	rc.Logger = nil
 	rc.ErrorHandler = retryablehttp.PassthroughErrorHandler
 	rc.HTTPClient.Timeout = 10 * time.Second
-	
+
 	if allowInsecureTLS {
 		rc.HTTPClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

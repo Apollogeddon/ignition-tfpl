@@ -24,7 +24,7 @@ func TestUnitAlarmJournalResource_Create(t *testing.T) {
 			if item.Config.Settings.Datasource != "db_connection" {
 				return nil, fmt.Errorf("expected datasource 'db_connection', got '%s'", item.Config.Settings.Datasource)
 			}
-			
+
 			// Simulate successful creation
 			item.Signature = "mock-signature-journal"
 			return &item, nil

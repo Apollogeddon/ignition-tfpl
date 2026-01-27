@@ -162,9 +162,9 @@ func (r *GanOutgoingResource) Configure(ctx context.Context, req resource.Config
 		Module:       "ignition",
 		ResourceType: "gateway-network-outgoing",
 		CreateFunc:   c.CreateGanOutgoing,
-		GetFunc:    c.GetGanOutgoing,
-		UpdateFunc: c.UpdateGanOutgoing,
-		DeleteFunc: c.DeleteGanOutgoing,
+		GetFunc:      c.GetGanOutgoing,
+		UpdateFunc:   c.UpdateGanOutgoing,
+		DeleteFunc:   c.DeleteGanOutgoing,
 	}
 }
 

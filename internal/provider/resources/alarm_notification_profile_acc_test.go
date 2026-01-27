@@ -37,7 +37,7 @@ func TestAccAlarmNotificationProfileResource(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				// Password/secrets are not returned by API, so we skip verifying them
-				ImportStateVerifyIgnore: []string{"email_config.password"}, 
+				ImportStateVerifyIgnore: []string{"email_config.password"},
 			},
 			// Update and Read testing
 			{

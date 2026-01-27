@@ -100,10 +100,10 @@ func TestClient_NoRetryOn400(t *testing.T) {
 }
 
 func TestClient_WaitLogic_SimulatedRestart(t *testing.T) {
-	// Item 2: Verify that we handle a "Wait" scenario. 
+	// Verify that we handle a "Wait" scenario.
 	// This simulates a resource creation where the subsequent GET fails initially (e.g. restart)
 	// but eventually succeeds.
-	
+
 	var postCount int32
 	var getCount int32
 
@@ -141,7 +141,7 @@ func TestClient_WaitLogic_SimulatedRestart(t *testing.T) {
 	// The GetResourceWithModule should retry on the 503s
 	item := map[string]string{"foo": "bar"}
 	var dest ResourceResponse[map[string]any]
-	
+
 	err := c.CreateResource(context.Background(), "test", item, &dest)
 	if err != nil {
 		t.Fatalf("Expected CreateResource to handle transient get errors, got: %v", err)

@@ -21,7 +21,7 @@ func TestUnitOpcUaConnectionResource_Create(t *testing.T) {
 			if item.Config.Settings.Endpoint.EndpointURL != "opc.tcp://localhost:4840" {
 				return nil, fmt.Errorf("unexpected endpoint URL: %s", item.Config.Settings.Endpoint.EndpointURL)
 			}
-			
+
 			// Simulate successful creation
 			item.Signature = "mock-signature-opc"
 			item.Config.Profile.Type = "com.inductiveautomation.OpcUaServerType"

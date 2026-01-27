@@ -26,7 +26,7 @@ func TestClient_UnparsableError(t *testing.T) {
 
 	var dest ResourceResponse[map[string]any]
 	err = c.GetResource(context.Background(), "test-type", "test-name", &dest)
-	
+
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
@@ -53,7 +53,7 @@ func TestClient_EmptyBodyError(t *testing.T) {
 
 	var dest ResourceResponse[map[string]any]
 	err = c.GetResource(context.Background(), "test-type", "test-name", &dest)
-	
+
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
@@ -88,7 +88,7 @@ func TestClient_CreateResource_EmptyResponse(t *testing.T) {
 	c, _ := NewClient(server.URL, "token", false)
 	var dest map[string]any
 	err := c.CreateResource(context.Background(), "t", map[string]any{}, &dest)
-	
+
 	if err == nil {
 		t.Fatal("Expected error for empty response on Create")
 	}
@@ -108,7 +108,7 @@ func TestClient_CreateResource_EmptyArray(t *testing.T) {
 	c, _ := NewClient(server.URL, "token", false)
 	var dest map[string]any
 	err := c.CreateResource(context.Background(), "t", map[string]any{}, &dest)
-	
+
 	if err == nil {
 		t.Fatal("Expected error for empty array response")
 	}
@@ -136,11 +136,11 @@ func TestClient_CreateResource_ResourceChanges(t *testing.T) {
 			}`))
 			return
 		}
-		
+
 		// Then it calls GetResourceWithModule to fetch the full object
 		if r.Method == http.MethodGet {
 			_ = json.NewEncoder(w).Encode(ResourceResponse[map[string]any]{
-				Name: "new-resource",
+				Name:      "new-resource",
 				Signature: "sig-789",
 			})
 		}
@@ -150,7 +150,7 @@ func TestClient_CreateResource_ResourceChanges(t *testing.T) {
 	c, _ := NewClient(server.URL, "token", false)
 	var dest ResourceResponse[map[string]any]
 	err := c.CreateResource(context.Background(), "test", map[string]any{}, &dest)
-	
+
 	if err != nil {
 		t.Fatalf("Unexpected error handling ResourceChangesResponse: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestClient_APIError_FieldMessages(t *testing.T) {
 	c, _ := NewClient(server.URL, "token", false)
 	var dest map[string]any
 	err := c.GetResource(context.Background(), "t", "n", &dest)
-	
+
 	if err == nil {
 		t.Fatal("Expected error")
 	}

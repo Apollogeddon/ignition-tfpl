@@ -190,17 +190,17 @@ func (r *AuditProfileResource) MapPlanToClient(ctx context.Context, model *Audit
 
 func (r *AuditProfileResource) MapClientToState(ctx context.Context, name string, config *client.AuditProfileConfig, model *AuditProfileResourceModel) error {
 	model.Name = types.StringValue(name)
-	
+
 	model.Type = types.StringValue(config.Profile.Type)
 	model.RetentionDays = types.Int64Value(int64(config.Profile.RetentionDays))
-	
+
 	if config.Settings.DatabaseName != "" {
 		model.Database = types.StringValue(config.Settings.DatabaseName)
 	}
 
 	model.PruneEnabled = types.BoolValue(config.Settings.PruneEnabled)
 	model.AutoCreate = types.BoolValue(config.Settings.AutoCreate)
-	
+
 	if config.Settings.TableName != "" {
 		model.TableName = types.StringValue(config.Settings.TableName)
 	} else if model.TableName.IsNull() || model.TableName.IsUnknown() {
@@ -218,7 +218,7 @@ func (r *AuditProfileResource) MapClientToState(ctx context.Context, name string
 	}
 
 	model.EnableStoreAndForward = types.BoolValue(config.Settings.EnableStoreAndForward)
-	
+
 	return nil
 }
 

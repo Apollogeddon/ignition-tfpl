@@ -24,7 +24,7 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 			if anp.Config.Profile.Type != "EmailNotificationProfileType" {
 				return nil, fmt.Errorf("expected type 'EmailNotificationProfileType', got '%s'", anp.Config.Profile.Type)
 			}
-			
+
 			// Simulate successful creation
 			anp.Signature = "mock-signature-123"
 			return &anp, nil
@@ -52,13 +52,13 @@ func TestUnitAlarmNotificationProfileResource_Create(t *testing.T) {
 			if anp.Name != "unit-test-profile" {
 				return nil, fmt.Errorf("expected name 'unit-test-profile', got '%s'", anp.Name)
 			}
-			
+
 			// In Ignition, settings for Email type are often nested
 			settings := anp.Config.Settings
 			if s, ok := settings["settings"].(map[string]any); ok {
 				settings = s
 			}
-			
+
 			if v, ok := settings["hostname"].(string); ok {
 				currentHostname = v
 			}

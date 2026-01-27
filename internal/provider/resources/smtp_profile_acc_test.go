@@ -29,9 +29,9 @@ func TestAccSMTPProfileResource(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "ignition_smtp_profile.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "ignition_smtp_profile.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},

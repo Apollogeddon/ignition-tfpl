@@ -256,9 +256,9 @@ func (r *IdentityProviderResource) Configure(ctx context.Context, req resource.C
 		Handler:      r,
 		ResourceType: "ignition/identity-provider",
 		CreateFunc:   c.CreateIdentityProvider,
-		GetFunc:    c.GetIdentityProvider,
-		UpdateFunc: c.UpdateIdentityProvider,
-		DeleteFunc: c.DeleteIdentityProvider,
+		GetFunc:      c.GetIdentityProvider,
+		UpdateFunc:   c.UpdateIdentityProvider,
+		DeleteFunc:   c.DeleteIdentityProvider,
 	}
 }
 
@@ -306,16 +306,16 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 		}, nil
 	} else if model.Type.ValueString() == "saml" {
 		samlConfig := client.IdentityProviderSamlConfig{
-			IdpEntityId:                 model.IdpEntityId.ValueString(),
-			SpEntityId:                  model.SpEntityId.ValueString(),
-			SpEntityIdEnabled:           model.SpEntityIdEnabled.ValueBool(),
-			AcsBinding:                  model.AcsBinding.ValueString(),
-			NameIdFormat:                model.NameIdFormat.ValueString(),
-			ForceAuthnEnabled:           model.ForceAuthn.ValueBool(),
-			ResponseSignaturesRequired:  model.ResponseSignaturesRequired.ValueBool(),
-			AssertionSignaturesRequired: model.AssertionSignaturesRequired.ValueBool(),
-			IdpMetadataUrl:              model.IdpMetadataUrl.ValueString(),
-			IdpMetadataUrlEnabled:       model.IdpMetadataUrlEnabled.ValueBool(),
+			IdpEntityId:                    model.IdpEntityId.ValueString(),
+			SpEntityId:                     model.SpEntityId.ValueString(),
+			SpEntityIdEnabled:              model.SpEntityIdEnabled.ValueBool(),
+			AcsBinding:                     model.AcsBinding.ValueString(),
+			NameIdFormat:                   model.NameIdFormat.ValueString(),
+			ForceAuthnEnabled:              model.ForceAuthn.ValueBool(),
+			ResponseSignaturesRequired:     model.ResponseSignaturesRequired.ValueBool(),
+			AssertionSignaturesRequired:    model.AssertionSignaturesRequired.ValueBool(),
+			IdpMetadataUrl:                 model.IdpMetadataUrl.ValueString(),
+			IdpMetadataUrlEnabled:          model.IdpMetadataUrlEnabled.ValueBool(),
 			SignatureVerifyingCertificates: []string{},
 			SignatureVerifyingKeys:         []any{},
 		}

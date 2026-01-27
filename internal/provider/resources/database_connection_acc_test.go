@@ -34,19 +34,19 @@ func TestAccDatabaseConnectionResource(t *testing.T) {
 			// Update and Read testing
 			{
 				Config: testAccDatabaseConnectionResourceConfig(rName, "MariaDB", "MYSQL", "jdbc:mariadb://localhost:3306/updated_db"),
-				                Check: resource.ComposeAggregateTestCheckFunc(
-				                    resource.TestCheckResourceAttr("ignition_database_connection.test", "name", rName),
-				                ),
-				            },
-				            {
-				                ResourceName:      "ignition_database_connection.test",
-				                ImportState:       true,
-				                ImportStateVerify: true,
-				                ImportStateVerifyIgnore: []string{"password"},
-				            },
-				        },
-				    })
-				}
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("ignition_database_connection.test", "name", rName),
+				),
+			},
+			{
+				ResourceName:            "ignition_database_connection.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
+			},
+		},
+	})
+}
 func testAccDatabaseConnectionResourceConfig(name, dbType, translator, url string) string {
 	return fmt.Sprintf(`
 provider "ignition" {}
