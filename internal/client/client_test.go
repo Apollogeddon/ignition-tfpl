@@ -235,18 +235,18 @@ func TestClient_APIError(t *testing.T) {
 	// Mock Server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		        response := APIErrorResponse{
-		            Success: false,
-		            Problem: &struct {
-		                Message    string   `json:"message"`
-		                StackTrace []string `json:"stacktrace,omitempty"`
-		            }{
-		                Message: "Resource already exists",
-		            },
-		        }
-		        _ = json.NewEncoder(w).Encode(response)
-		    }))
-		    defer server.Close()
+		response := APIErrorResponse{
+			Success: false,
+			Problem: &struct {
+				Message    string   `json:"message"`
+				StackTrace []string `json:"stacktrace,omitempty"`
+			}{
+				Message: "Resource already exists",
+			},
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
 	// Client
 	c, err := NewClient(server.URL, "test-token", false)
 	if err != nil {
@@ -281,7 +281,7 @@ func TestClient_DatabaseConnectionOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	db := ResourceResponse[DatabaseConfig]{Name: "test-db", Config: DatabaseConfig{Driver: "MariaDB"}}
-	
+
 	_, err := c.CreateDatabaseConnection(context.Background(), db)
 	if err != nil {
 		t.Errorf("CreateDatabaseConnection failed: %v", err)
@@ -308,7 +308,7 @@ func TestClient_UserSourceOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	us := ResourceResponse[UserSourceConfig]{Name: "test-us", Config: UserSourceConfig{Profile: UserSourceProfile{Type: "internal"}}}
-	
+
 	_, err := c.CreateUserSource(context.Background(), us)
 	if err != nil {
 		t.Errorf("CreateUserSource failed: %v", err)
@@ -335,7 +335,7 @@ func TestClient_TagProviderOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	tp := ResourceResponse[TagProviderConfig]{Name: "test-tp", Config: TagProviderConfig{Profile: TagProviderProfile{Type: "STANDARD"}}}
-	
+
 	_, err := c.CreateTagProvider(context.Background(), tp)
 	if err != nil {
 		t.Errorf("CreateTagProvider failed: %v", err)
@@ -362,7 +362,7 @@ func TestClient_AuditProfileOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	ap := ResourceResponse[AuditProfileConfig]{Name: "test-ap", Config: AuditProfileConfig{Profile: AuditProfileProfile{Type: "database"}}}
-	
+
 	_, err := c.CreateAuditProfile(context.Background(), ap)
 	if err != nil {
 		t.Errorf("CreateAuditProfile failed: %v", err)
@@ -389,7 +389,7 @@ func TestClient_ModuleResourceOperations(t *testing.T) {
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	
+
 	anp := ResourceResponse[AlarmNotificationProfileConfig]{Name: "anp"}
 	_, err := c.CreateAlarmNotificationProfile(context.Background(), anp)
 	if err != nil {
@@ -420,7 +420,7 @@ func TestClient_RedundancyOperations(t *testing.T) {
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	
+
 	config, err := c.GetRedundancyConfig(context.Background())
 	if err != nil {
 		t.Errorf("GetRedundancyConfig failed: %v", err)
@@ -456,10 +456,10 @@ func TestClient_AlarmJournalOperations(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
-	
+
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[AlarmJournalConfig]{Name: "test-journal"}
-	
+
 	if _, err := c.CreateAlarmJournal(context.Background(), item); err != nil {
 		t.Errorf("CreateAlarmJournal failed: %v", err)
 	}
@@ -498,7 +498,7 @@ func TestClient_SMTPProfileOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[SMTPProfileConfig]{Name: "test-smtp"}
-	
+
 	if _, err := c.CreateSMTPProfile(context.Background(), item); err != nil {
 		t.Errorf("CreateSMTPProfile failed: %v", err)
 	}
@@ -537,7 +537,7 @@ func TestClient_StoreAndForwardOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[StoreAndForwardConfig]{Name: "test-sf"}
-	
+
 	if _, err := c.CreateStoreAndForward(context.Background(), item); err != nil {
 		t.Errorf("CreateStoreAndForward failed: %v", err)
 	}
@@ -576,7 +576,7 @@ func TestClient_IdentityProviderOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[IdentityProviderConfig]{Name: "test-idp"}
-	
+
 	if _, err := c.CreateIdentityProvider(context.Background(), item); err != nil {
 		t.Errorf("CreateIdentityProvider failed: %v", err)
 	}
@@ -615,7 +615,7 @@ func TestClient_GanOutgoingOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[GanOutgoingConfig]{Name: "test-gan"}
-	
+
 	if _, err := c.CreateGanOutgoing(context.Background(), item); err != nil {
 		t.Errorf("CreateGanOutgoing failed: %v", err)
 	}
@@ -642,7 +642,7 @@ func TestClient_GanGeneralSettingsOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[GanGeneralSettingsConfig]{Name: "settings"}
-	
+
 	if _, err := c.UpdateGanGeneralSettings(context.Background(), item); err != nil {
 		t.Errorf("UpdateGanGeneralSettings failed: %v", err)
 	}
@@ -675,7 +675,7 @@ func TestClient_DeviceOperations(t *testing.T) {
 
 	c, _ := NewClient(server.URL, "token", false)
 	item := ResourceResponse[DeviceConfig]{Name: "test-device"}
-	
+
 	if _, err := c.CreateDevice(context.Background(), item); err != nil {
 		t.Errorf("CreateDevice failed: %v", err)
 	}
@@ -695,14 +695,14 @@ func TestClient_EncryptSecret(t *testing.T) {
 		if r.Header.Get("Content-Type") != "text/plain" {
 			t.Errorf("Expected Content-Type text/plain, got %s", r.Header.Get("Content-Type"))
 		}
-		
+
 		response := map[string]interface{}{"jwe": "mock-jwe"}
 		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	
+
 	secret, err := c.EncryptSecret(context.Background(), "my-password")
 	if err != nil {
 		t.Errorf("EncryptSecret failed: %v", err)
@@ -719,4 +719,3 @@ func TestClient_EncryptSecret(t *testing.T) {
 func boolPtr(b bool) *bool {
 	return &b
 }
-

@@ -32,11 +32,11 @@ type DatabaseConnectionResource struct {
 // DatabaseConnectionResourceModel describes the resource data model.
 type DatabaseConnectionResourceModel struct {
 	base.BaseResourceModel
-	Type        types.String `tfsdk:"type"`
-	Translator  types.String `tfsdk:"translator"`
-	ConnectURL  types.String `tfsdk:"connect_url"`
-	Username    types.String `tfsdk:"username"`
-	Password    types.String `tfsdk:"password"`
+	Type       types.String `tfsdk:"type"`
+	Translator types.String `tfsdk:"translator"`
+	ConnectURL types.String `tfsdk:"connect_url"`
+	Username   types.String `tfsdk:"username"`
+	Password   types.String `tfsdk:"password"`
 }
 
 func (r *DatabaseConnectionResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -170,7 +170,7 @@ func (r *DatabaseConnectionResource) MapClientToState(ctx context.Context, name 
 	} else {
 		model.Username = types.StringNull()
 	}
-	
+
 	// Ensure signature is preserved
 	// The signature is handled by the generic base if provided in the response
 	return nil

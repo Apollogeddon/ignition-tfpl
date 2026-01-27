@@ -149,13 +149,13 @@ func (r *UserSourceResource) MapClientToState(ctx context.Context, name string, 
 	} else if model.FailoverProfile.IsNull() || model.FailoverProfile.IsUnknown() {
 		model.FailoverProfile = types.StringNull()
 	}
-	
+
 	if config.Profile.FailoverMode != "" {
 		model.FailoverMode = types.StringValue(config.Profile.FailoverMode)
 	} else if model.FailoverMode.IsNull() || model.FailoverMode.IsUnknown() {
 		model.FailoverMode = types.StringNull()
 	}
-	
+
 	model.ScheduleRestricted = types.BoolValue(config.Profile.ScheduleRestricted)
 	return nil
 }

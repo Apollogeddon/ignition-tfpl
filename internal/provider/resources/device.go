@@ -28,8 +28,8 @@ type DeviceResource struct {
 
 type DeviceResourceModel struct {
 	base.BaseResourceModel
-	Type        types.String `tfsdk:"type"`
-	Parameters  types.String `tfsdk:"parameters"`
+	Type       types.String `tfsdk:"type"`
+	Parameters types.String `tfsdk:"parameters"`
 }
 
 func (r *DeviceResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -108,7 +108,7 @@ func (r *DeviceResource) Configure(ctx context.Context, req resource.ConfigureRe
 
 func (r *DeviceResource) MapPlanToClient(ctx context.Context, model *DeviceResourceModel) (client.DeviceConfig, error) {
 	config := make(client.DeviceConfig)
-	
+
 	// Unmarshal JSON parameters
 	if err := json.Unmarshal([]byte(model.Parameters.ValueString()), &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal parameters JSON: %w", err)
@@ -119,7 +119,7 @@ func (r *DeviceResource) MapPlanToClient(ctx context.Context, model *DeviceResou
 
 func (r *DeviceResource) MapClientToState(ctx context.Context, name string, config *client.DeviceConfig, model *DeviceResourceModel) error {
 	model.Name = types.StringValue(name)
-	
+
 	// Marshal the API response to canonical JSON
 	b, err := json.Marshal(config)
 	if err != nil {
@@ -127,12 +127,9 @@ func (r *DeviceResource) MapClientToState(ctx context.Context, name string, conf
 	}
 	canonicalAPI := string(b)
 
-	// If the model already has a value (from Plan), check if it's semantically equal
 	if !model.Parameters.IsNull() && !model.Parameters.IsUnknown() {
 		var modelConfig client.DeviceConfig
-		// Try to unmarshal the plan value
 		if err := json.Unmarshal([]byte(model.Parameters.ValueString()), &modelConfig); err == nil {
-			// Re-marshal to compare canonical forms
 			bModel, _ := json.Marshal(modelConfig)
 			if string(bModel) == canonicalAPI {
 				// They are semantically equal (ignoring whitespace), so keep the Plan value
@@ -150,7 +147,7 @@ func (r *DeviceResource) MapClientToState(ctx context.Context, name string, conf
 
 func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data DeviceResourceModel
-	
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -163,11 +160,11 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	res := client.ResourceResponse[client.DeviceConfig]{
-		Module:       r.Res.Module,
-		Type:         data.Type.ValueString(), // Use the driver type from the plan
-		Name:         data.Name.ValueString(),
-		Enabled:      base.BoolPtr(data.Enabled.ValueBool()),
-		Config:       config,
+		Module:  r.Res.Module,
+		Type:    data.Type.ValueString(), // Use the driver type from the plan
+		Name:    data.Name.ValueString(),
+		Enabled: base.BoolPtr(data.Enabled.ValueBool()),
+		Config:  config,
 	}
 
 	if !data.Description.IsNull() {
@@ -195,7 +192,7 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 	} else if data.Description.IsNull() || data.Description.IsUnknown() {
 		data.Description = types.StringNull()
 	}
-	
+
 	// The API returns the Driver Type in the Type field, so we map it back
 	data.Type = types.StringValue(created.Type)
 
@@ -214,7 +211,7 @@ func (r *DeviceResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data DeviceResourceModel
-	
+
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -234,12 +231,12 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	res := client.ResourceResponse[client.DeviceConfig]{
-		Module:       r.Res.Module,
-		Type:         data.Type.ValueString(), // Use the driver type from the plan
-		Name:         data.Name.ValueString(),
-		Enabled:      base.BoolPtr(data.Enabled.ValueBool()),
-		Signature:    stateModel.Signature.ValueString(),
-		Config:       config,
+		Module:    r.Res.Module,
+		Type:      data.Type.ValueString(), // Use the driver type from the plan
+		Name:      data.Name.ValueString(),
+		Enabled:   base.BoolPtr(data.Enabled.ValueBool()),
+		Signature: stateModel.Signature.ValueString(),
+		Config:    config,
 	}
 
 	if !data.Description.IsNull() {
@@ -261,7 +258,7 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 			updated = fresh
 		} else if !stateModel.Signature.IsNull() && !stateModel.Signature.IsUnknown() {
 			data.Signature = stateModel.Signature
-			resp.Diagnostics.AddWarning("Missing Signature on Update", 
+			resp.Diagnostics.AddWarning("Missing Signature on Update",
 				"The API returned an empty signature after update and refresh failed. Preserving the existing signature.")
 		}
 	}
@@ -281,10 +278,10 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 	} else if data.Description.IsNull() || data.Description.IsUnknown() {
 		data.Description = types.StringNull()
 	}
-	
+
 	// Map the Type back
 	data.Type = types.StringValue(updated.Type)
-	
+
 	if err := r.MapClientToState(ctx, updated.Name, &updated.Config, &data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return

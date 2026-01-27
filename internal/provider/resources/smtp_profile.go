@@ -131,9 +131,9 @@ func (r *SMTPProfileResource) Configure(ctx context.Context, req resource.Config
 		Module:       "ignition",
 		ResourceType: "email-profile",
 		CreateFunc:   c.CreateSMTPProfile,
-		GetFunc:    c.GetSMTPProfile,
-		UpdateFunc: c.UpdateSMTPProfile,
-		DeleteFunc: c.DeleteSMTPProfile,
+		GetFunc:      c.GetSMTPProfile,
+		UpdateFunc:   c.UpdateSMTPProfile,
+		DeleteFunc:   c.DeleteSMTPProfile,
 	}
 }
 
@@ -168,7 +168,7 @@ func (r *SMTPProfileResource) MapPlanToClient(ctx context.Context, model *SMTPPr
 
 func (r *SMTPProfileResource) MapClientToState(ctx context.Context, name string, config *client.SMTPProfileConfig, model *SMTPProfileResourceModel) error {
 	model.Name = types.StringValue(name)
-	
+
 	if config.Profile.Type != "" {
 		model.Hostname = types.StringValue(config.Settings.Settings.Hostname)
 		model.Port = types.Int64Value(int64(config.Settings.Settings.Port))

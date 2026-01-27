@@ -12,11 +12,11 @@ import (
 
 // TestProvider is a minimal implementation of provider.Provider for unit testing.
 type TestProvider struct {
-	ResourceFactory    func() resource.Resource
-	ResourceFactories  []func() resource.Resource
-	DataSourceFactory  func() datasource.DataSource
+	ResourceFactory     func() resource.Resource
+	ResourceFactories   []func() resource.Resource
+	DataSourceFactory   func() datasource.DataSource
 	DataSourceFactories []func() datasource.DataSource
-	Client             client.IgnitionClient
+	Client              client.IgnitionClient
 }
 
 func (p *TestProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {

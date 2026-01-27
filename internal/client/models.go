@@ -60,7 +60,7 @@ type DatabaseConfig struct {
 }
 
 type TagProviderProfile struct {
-	Type        string `json:"type"`
+	Type string `json:"type"`
 }
 
 type TagProviderConfig struct {
@@ -244,12 +244,12 @@ type IdentityProviderOidcConfig struct {
 }
 
 type IdentityProviderSamlConfig struct {
-	IdpEntityId                    string   `json:"idpEntityId"`
-	SpEntityId                     string   `json:"spEntityId,omitempty"`
-	SpEntityIdEnabled              bool     `json:"spEntityIdEnabled"`
-	AcsBinding                     string   `json:"acsBinding"`
-	NameIdFormat                   string   `json:"nameIdFormat"`
-	SsoServiceConfig               struct {
+	IdpEntityId       string `json:"idpEntityId"`
+	SpEntityId        string `json:"spEntityId,omitempty"`
+	SpEntityIdEnabled bool   `json:"spEntityIdEnabled"`
+	AcsBinding        string `json:"acsBinding"`
+	NameIdFormat      string `json:"nameIdFormat"`
+	SsoServiceConfig  struct {
 		Uri     string `json:"uri"`
 		Binding string `json:"binding"`
 	} `json:"ssoServiceConfig"`

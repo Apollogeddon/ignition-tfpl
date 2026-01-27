@@ -25,18 +25,18 @@ type StoreAndForwardDataSource struct {
 
 // StoreAndForwardDataSourceModel describes the data source data model.
 type StoreAndForwardDataSourceModel struct {
-	Id                 types.String                  `tfsdk:"id"`
-	Name               types.String                  `tfsdk:"name"`
-	Description        types.String                  `tfsdk:"description"`
-	Enabled            types.Bool                    `tfsdk:"enabled"`
-	TimeThresholdMs    types.Int64                   `tfsdk:"time_threshold_ms"`
-	ForwardRateMs      types.Int64                   `tfsdk:"forward_rate_ms"`
-	ForwardingPolicy   types.String                  `tfsdk:"forwarding_policy"`
-	ForwardingSchedule types.String                  `tfsdk:"forwarding_schedule"`
-	IsThirdParty       types.Bool                    `tfsdk:"is_third_party"`
-	DataThreshold      types.Int64                   `tfsdk:"data_threshold"`
-	BatchSize          types.Int64                   `tfsdk:"batch_size"`
-	ScanRateMs         types.Int64                   `tfsdk:"scan_rate_ms"`
+	Id                 types.String                      `tfsdk:"id"`
+	Name               types.String                      `tfsdk:"name"`
+	Description        types.String                      `tfsdk:"description"`
+	Enabled            types.Bool                        `tfsdk:"enabled"`
+	TimeThresholdMs    types.Int64                       `tfsdk:"time_threshold_ms"`
+	ForwardRateMs      types.Int64                       `tfsdk:"forward_rate_ms"`
+	ForwardingPolicy   types.String                      `tfsdk:"forwarding_policy"`
+	ForwardingSchedule types.String                      `tfsdk:"forwarding_schedule"`
+	IsThirdParty       types.Bool                        `tfsdk:"is_third_party"`
+	DataThreshold      types.Int64                       `tfsdk:"data_threshold"`
+	BatchSize          types.Int64                       `tfsdk:"batch_size"`
+	ScanRateMs         types.Int64                       `tfsdk:"scan_rate_ms"`
 	PrimaryPolicy      *resources.MaintenancePolicyModel `tfsdk:"primary_policy"`
 	SecondaryPolicy    *resources.MaintenancePolicyModel `tfsdk:"secondary_policy"`
 }
@@ -151,7 +151,7 @@ func (d *StoreAndForwardDataSource) Read(ctx context.Context, req datasource.Rea
 		data.Enabled = types.BoolValue(true)
 	}
 	data.Description = types.StringValue(res.Description)
-	
+
 	data.TimeThresholdMs = types.Int64Value(int64(res.Config.TimeThresholdMs))
 	data.ForwardRateMs = types.Int64Value(int64(res.Config.ForwardRateMs))
 	data.ForwardingPolicy = types.StringValue(res.Config.ForwardingPolicy)

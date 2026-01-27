@@ -118,7 +118,7 @@ func (d *SMTPProfileDataSource) Read(ctx context.Context, req datasource.ReadReq
 	} else {
 		data.Enabled = types.BoolValue(true)
 	}
-	
+
 	if res.Description != "" {
 		data.Description = types.StringValue(res.Description)
 	} else {

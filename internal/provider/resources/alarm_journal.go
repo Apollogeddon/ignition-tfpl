@@ -132,36 +132,36 @@ func (r *AlarmJournalResource) Configure(ctx context.Context, req resource.Confi
 		Handler:      r,
 		ResourceType: "ignition/alarm-journal",
 		CreateFunc:   c.CreateAlarmJournal,
-		GetFunc:    c.GetAlarmJournal,
-		UpdateFunc: c.UpdateAlarmJournal,
-		DeleteFunc: c.DeleteAlarmJournal,
+		GetFunc:      c.GetAlarmJournal,
+		UpdateFunc:   c.UpdateAlarmJournal,
+		DeleteFunc:   c.DeleteAlarmJournal,
 	}
 }
 
 func (r *AlarmJournalResource) MapPlanToClient(ctx context.Context, model *AlarmJournalResourceModel) (client.AlarmJournalConfig, error) {
 	settings := client.AlarmJournalSettings{}
-	
+
 	if model.Type.ValueString() == "DATASOURCE" {
 		if !model.Datasource.IsNull() {
 			settings.Datasource = model.Datasource.ValueString()
 		}
-		
+
 		settings.Advanced = &struct {
 			TableName          string `json:"tableName,omitempty"`
 			DataTableName      string `json:"dataTableName,omitempty"`
 			UseStoreAndForward bool   `json:"useStoreAndForward,omitempty"`
 		}{}
-		
+
 		if !model.TableName.IsNull() {
 			settings.Advanced.TableName = model.TableName.ValueString()
 		}
-		
+
 		settings.Events = &struct {
 			MinPriority            string `json:"minPriority,omitempty"`
 			StoreShelvedEvents     bool   `json:"storeShelvedEvents,omitempty"`
 			StoreFromEnabledChange bool   `json:"storeFromEnabledChange,omitempty"`
 		}{}
-		
+
 		if !model.MinPriority.IsNull() {
 			settings.Events.MinPriority = model.MinPriority.ValueString()
 		}
@@ -188,11 +188,11 @@ func (r *AlarmJournalResource) MapPlanToClient(ctx context.Context, model *Alarm
 
 func (r *AlarmJournalResource) MapClientToState(ctx context.Context, name string, config *client.AlarmJournalConfig, model *AlarmJournalResourceModel) error {
 	model.Name = types.StringValue(name)
-	
+
 	if config.Profile.Type != "" {
 		model.Type = types.StringValue(config.Profile.Type)
 	}
-	// Reset specific fields
+
 	model.Datasource = types.StringNull()
 	model.TableName = types.StringNull()
 	model.MinPriority = types.StringNull()

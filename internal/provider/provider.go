@@ -116,7 +116,7 @@ func (p *IgnitionProvider) Configure(ctx context.Context, req provider.Configure
 			"The provider token must be configured via the 'token' attribute or IGNITION_TOKEN environment variable.",
 		)
 	}
-	
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -127,13 +127,12 @@ func (p *IgnitionProvider) Configure(ctx context.Context, req provider.Configure
 	if p.client != nil {
 		apiClient = p.client
 	} else {
-		// Create a new client if one wasn't injected
 		apiClient, err = client.NewClient(host, token, allowInsecure)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Unable to Create Ignition API Client",
-				"An unexpected error occurred when creating the Ignition API client. " +
-					"If the error is not clear, please contact the provider developers.\n\n" +
+				"An unexpected error occurred when creating the Ignition API client. "+
+					"If the error is not clear, please contact the provider developers.\n\n"+
 					"Ignition Client Error: "+err.Error(),
 			)
 			return

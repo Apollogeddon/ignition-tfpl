@@ -32,8 +32,7 @@ type GenericIgnitionResource[T any, M any] struct {
 	Handler      IgnitionResourceHandler[T, M]
 	Module       string
 	ResourceType string
-	
-	// API Methods
+
 	CreateFunc func(context.Context, client.ResourceResponse[T]) (*client.ResourceResponse[T], error)
 	GetFunc    func(context.Context, string) (*client.ResourceResponse[T], error)
 	UpdateFunc func(context.Context, client.ResourceResponse[T]) (*client.ResourceResponse[T], error)
@@ -53,11 +52,11 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 	}
 
 	res := client.ResourceResponse[T]{
-		Module:       r.Module,
-		Type:        r.ResourceType,
-		Name:         baseModel.Name.ValueString(),
-		Enabled:      BoolPtr(baseModel.Enabled.ValueBool()),
-		Config:       config,
+		Module:  r.Module,
+		Type:    r.ResourceType,
+		Name:    baseModel.Name.ValueString(),
+		Enabled: BoolPtr(baseModel.Enabled.ValueBool()),
+		Config:  config,
 	}
 
 	if !baseModel.Description.IsNull() {
@@ -85,7 +84,7 @@ func (r *GenericIgnitionResource[T, M]) Create(ctx context.Context, req resource
 	} else if baseModel.Description.IsNull() || baseModel.Description.IsUnknown() {
 		baseModel.Description = types.StringNull()
 	}
-	
+
 	if err := r.Handler.MapClientToState(ctx, created.Name, &created.Config, data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return
@@ -120,7 +119,7 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 	} else {
 		baseModel.Enabled = types.BoolValue(true)
 	}
-	
+
 	if res.Description != "" {
 		baseModel.Description = types.StringValue(res.Description)
 	} else if baseModel.Description.IsNull() || baseModel.Description.IsUnknown() {
@@ -155,12 +154,12 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 	}
 
 	res := client.ResourceResponse[T]{
-		Module:       r.Module,
-		Type:        r.ResourceType,
-		Name:         baseModel.Name.ValueString(),
-		Enabled:      BoolPtr(baseModel.Enabled.ValueBool()),
-		Signature:    sig.ValueString(),
-		Config:       config,
+		Module:    r.Module,
+		Type:      r.ResourceType,
+		Name:      baseModel.Name.ValueString(),
+		Enabled:   BoolPtr(baseModel.Enabled.ValueBool()),
+		Signature: sig.ValueString(),
+		Config:    config,
 	}
 
 	if !baseModel.Description.IsNull() {
@@ -183,7 +182,7 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 			updated = fresh
 		} else if !sig.IsNull() && !sig.IsUnknown() {
 			baseModel.Signature = sig
-			resp.Diagnostics.AddWarning("Missing Signature on Update", 
+			resp.Diagnostics.AddWarning("Missing Signature on Update",
 				"The API returned an empty signature after update and refresh failed. Preserving the existing signature.")
 		}
 	}
@@ -203,7 +202,7 @@ func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource
 	} else if baseModel.Description.IsNull() || baseModel.Description.IsUnknown() {
 		baseModel.Description = types.StringNull()
 	}
-	
+
 	if err := r.Handler.MapClientToState(ctx, updated.Name, &updated.Config, data); err != nil {
 		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
 		return

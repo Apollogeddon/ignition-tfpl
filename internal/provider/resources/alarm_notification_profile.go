@@ -32,7 +32,7 @@ type AlarmNotificationProfileResource struct {
 // AlarmNotificationProfileResourceModel describes the resource data model.
 type AlarmNotificationProfileResourceModel struct {
 	base.BaseResourceModel
-	Type        types.String                      `tfsdk:"type"`
+	Type        types.String                        `tfsdk:"type"`
 	EmailConfig *AlarmNotificationProfileEmailModel `tfsdk:"email_config"`
 }
 
@@ -83,7 +83,6 @@ func (r *AlarmNotificationProfileResource) Schema(ctx context.Context, req resou
 				Validators: []validator.String{
 					stringvalidator.OneOf(
 						"EmailNotificationProfileType",
-						// Add others as they are implemented
 					),
 				},
 			},
@@ -169,7 +168,7 @@ func (r *AlarmNotificationProfileResource) MapPlanToClient(ctx context.Context, 
 	if model.Type.ValueString() == "EmailNotificationProfileType" && model.EmailConfig != nil {
 		emailSettings := make(map[string]any)
 		emailSettings["useSmtpProfile"] = model.EmailConfig.UseSMTPProfile.ValueBool()
-		
+
 		if !model.EmailConfig.EmailProfile.IsNull() {
 			emailSettings["emailProfile"] = model.EmailConfig.EmailProfile.ValueString()
 		}
@@ -204,47 +203,45 @@ func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context,
 
 	if config.Profile.Type == "EmailNotificationProfileType" {
 		model.Type = types.StringValue(config.Profile.Type)
-		
+
 		if model.EmailConfig == nil {
 			model.EmailConfig = &AlarmNotificationProfileEmailModel{}
 		}
 
 		if config.Settings != nil {
 			settings := config.Settings
-			// Check for nested "settings" object
 			if s, ok := settings["settings"].(map[string]any); ok {
 				settings = s
 			}
-			
+
 			if v, ok := settings["useSmtpProfile"].(bool); ok {
 				model.EmailConfig.UseSMTPProfile = types.BoolValue(v)
 			}
-			
+
 			if v, ok := settings["emailProfile"].(string); ok && v != "" {
 				model.EmailConfig.EmailProfile = types.StringValue(v)
 			}
-			
+
 			if v, ok := settings["hostname"].(string); ok && v != "" {
 				model.EmailConfig.Hostname = types.StringValue(v)
 			}
-			
+
 			if v, ok := settings["port"].(float64); ok && v != 0 {
 				model.EmailConfig.Port = types.Int64Value(int64(v))
 			} else if v, ok := settings["port"].(int); ok && v != 0 {
 				model.EmailConfig.Port = types.Int64Value(int64(v))
 			}
-			
+
 			if v, ok := settings["sslEnabled"].(bool); ok {
 				model.EmailConfig.SSLEnabled = types.BoolValue(v)
 			} else {
 				model.EmailConfig.SSLEnabled = types.BoolValue(false)
 			}
-			
+
 			if v, ok := settings["username"].(string); ok && v != "" {
 				model.EmailConfig.Username = types.StringValue(v)
 			}
 		} else {
-			// Ensure SSL Enabled is at least known if we have an Email type
 			if model.EmailConfig.SSLEnabled.IsUnknown() {
 				model.EmailConfig.SSLEnabled = types.BoolValue(false)
 			}

@@ -61,13 +61,13 @@ func (r *StoreAndForwardResource) Schema(ctx context.Context, req resource.Schem
 	maintenancePolicySchema := schema.NestedAttributeObject{
 		Attributes: map[string]schema.Attribute{
 			"action": schema.StringAttribute{
-				Required:    true,
+				Required: true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("EVICT_OLDEST_DATA", "PREVENT_NEW_DATA"),
 				},
 			},
 			"limit_type": schema.StringAttribute{
-				Required:    true,
+				Required: true,
 				Validators: []validator.String{
 					stringvalidator.OneOf("TIME_DURATION", "COUNT", "FILE_SIZE"),
 				},
@@ -192,9 +192,9 @@ func (r *StoreAndForwardResource) Configure(ctx context.Context, req resource.Co
 		Module:       "ignition",
 		ResourceType: "store-and-forward-engine",
 		CreateFunc:   c.CreateStoreAndForward,
-		GetFunc:    c.GetStoreAndForward,
-		UpdateFunc: c.UpdateStoreAndForward,
-		DeleteFunc: c.DeleteStoreAndForward,
+		GetFunc:      c.GetStoreAndForward,
+		UpdateFunc:   c.UpdateStoreAndForward,
+		DeleteFunc:   c.DeleteStoreAndForward,
 	}
 }
 
