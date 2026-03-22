@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-TF_PLUGIN_DOCS_VERSION="v0.20.1"
+TF_PLUGIN_DOCS_VERSION="v0.24.0"
 
 echo "Installing tfplugindocs $TF_PLUGIN_DOCS_VERSION..."
 go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@$TF_PLUGIN_DOCS_VERSION
