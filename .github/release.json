@@ -2,6 +2,7 @@
   "packages": {
     ".": {
       "release-type": "go",
+      "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "main.go"
       ]

@@ -1,9 +1,9 @@
 <br />
 <div align="center">
   <a href="https://apollogeddon.github.io/ignition-tfpl">
-    <img src="https://apollogeddon.github.io/ignition-tfpl/favicon.png" alt="Logo" width="100" height="100">
+    <img src="../webpage/public/favicon.png" alt="Logo" width="100" height="100">
   </a>
-  <h3 align="center">Ignition TF Plugin</h3>
+  <h3 align="center">Ignition Terraform Provider</h3>
   <p align="center">
     Manage your Inductive Automation Ignition Gateway infrastructure as code.
     <br />
@@ -18,7 +18,7 @@
 
 ## 🚀 Overview
 
-The **Ignition Terraform Plugin** allows you to manage Inductive Automation's Ignition Perspective 8.3 infrastructure using HashiCorp Terraform. Configure Projects, Database Connections, Tag Providers, and Enterprise settings (Redundancy, GAN) alongside your cloud infrastructure.
+The **Ignition Terraform Provider** allows you to manage Inductive Automation's Ignition Perspective 8.3 infrastructure using HashiCorp Terraform. Configure Projects, Database Connections, Tag Providers, and Enterprise settings (Redundancy, GAN) alongside your cloud infrastructure.
 
 ## ✨ Features
 
@@ -27,9 +27,11 @@ The **Ignition Terraform Plugin** allows you to manage Inductive Automation's Ig
 - **Drift Detection**: Automatically detect and reconcile manual changes made in the Designer or Gateway Web Interface.
 - **Enterprise Ready**: Support for complex architectures including Redundancy, Gateway Networks, and Identity Providers (SAML/OIDC).
 
-## 🏁 Quick Start
+## 🛠️ Usage
 
-Configure your provider and manage a project in seconds.
+### Quick Start
+
+Configure your provider and manage a project in seconds:
 
 ```hcl
 provider "ignition" {
@@ -50,7 +52,7 @@ resource "ignition_project" "example" {
 ### Prerequisites
 
 - **Terraform** (v1.0+)
-- **Ignition Gateway** (v8.1+)
+- **Ignition Gateway** (v8.3+)
 
 ### Configuration
 
@@ -67,14 +69,12 @@ terraform {
 }
 ```
 
-Authentication can be handled via environment variables to keep your configuration secure:
-
 | Variable | Description |
 | :--- | :--- |
 | `IGNITION_HOST` | The base URL of the Ignition Gateway (e.g., `http://10.10.1.5:8088`). |
 | `IGNITION_TOKEN` | The API Token generated in the Ignition Gateway Config section. |
 
-## 🛠️ Supported Resources
+## 🧩 Supported Resources
 
 The provider supports a comprehensive set of Ignition resources:
 
