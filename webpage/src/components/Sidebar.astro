@@ -8,7 +8,7 @@ const pathname = new URL(Astro.request.url).pathname;
 // Optimized organization logic: single pass to group and sort
 const sections = [
 	{ label: "Guides", prefix: "guides/" },
-	{ label: "Reference", prefix: "reference/" },
+	{ label: "Sources", prefix: "reference/" },
 ]
 	.map((section) => ({
 		...section,

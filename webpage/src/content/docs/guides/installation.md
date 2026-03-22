@@ -8,7 +8,7 @@ description: How to install and configure the Ignition Terraform Provider.
 Before using the Ignition Terraform Provider, ensure you have the following installed:
 
 - **Terraform** (v1.0+)
-- **Ignition Gateway** (v8.1+) running the Web Developer module (implied by API usage, though core API is usually built-in).
+- **Ignition Gateway** (v8.3+) (open API is only supported from 8.3.0 onwards).
 
 ## Provider Configuration
 
@@ -34,6 +34,8 @@ provider "ignition" {
   allow_insecure_tls = false # Set to true if using self-signed certs
 }
 ```
+
+> **Note:** `allow_insecure_tls` is particularly useful when working with local Docker environments or Gateways using default self-signed certificates. Use with caution in production.
 
 ### Environment Variables
 
