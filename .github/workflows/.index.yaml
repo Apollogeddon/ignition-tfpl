@@ -20,10 +20,14 @@ permissions:
 
 jobs:
   testing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     uses: ./.github/workflows/testing.yaml
     secrets: inherit
 
   quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     uses: ./.github/workflows/quality.yaml
     secrets: inherit
 

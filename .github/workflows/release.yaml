@@ -11,12 +11,13 @@ permissions:
 jobs:
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
     steps:
       - name: Release Please
         id: release
-        uses: google-github-actions/release-please-action@v4
+        uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/release.json
@@ -26,11 +27,17 @@ jobs:
     needs: version
     if: needs.version.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Setup Go
         uses: actions/setup-go@v6
