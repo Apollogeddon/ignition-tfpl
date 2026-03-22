@@ -1,20 +1,34 @@
 #!/bin/bash
 set -e
 
-# Ensure base directory exists
-mkdir -p webpage/src/content/docs/reference
+# Ensure base directory exists (updated to sources)
+mkdir -p webpage/src/content/docs/sources
 
 # Process all markdown files in docs/ recursively
 find docs -type f -name "*.md" | while read -r file; do
-  # Determine relative path and target destination
+  # Determine relative path components
   rel_path="${file#docs/}"
-  dest_path="webpage/src/content/docs/reference/$rel_path"
+  dir_part=$(dirname "$rel_path")
+  base_part=$(basename "$rel_path")
+  
+  # Prefix with 'ignition_' if not index.md and not already prefixed
+  target_name="$base_part"
+  if [[ "$base_part" != "index.md" && "$base_part" != ignition_* ]]; then
+    target_name="ignition_$base_part"
+  fi
+  
+  # Determine final destination path in the sources/ directory
+  if [[ "$dir_part" == "." ]]; then
+    dest_path="webpage/src/content/docs/sources/$target_name"
+  else
+    dest_path="webpage/src/content/docs/sources/$dir_part/$target_name"
+  fi
   
   # Create target subdirectory if it doesn't exist
   mkdir -p "$(dirname "$dest_path")"
   
   # Special title handling for index.md
-  default_title="Reference"
+  default_title="Sources"
   if [[ "$rel_path" == "index.md" ]]; then
     default_title="Ignition Provider"
   fi

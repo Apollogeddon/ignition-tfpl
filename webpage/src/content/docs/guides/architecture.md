@@ -31,17 +31,33 @@ This layer implements the Terraform protocol. It defines the Schema (attributes,
 
 A dedicated Go client that handles the HTTP communication with the Ignition Gateway.
 
-- **Retry Logic**: Uses `hashicorp/go-retryablehttp` to handle transient network failures or Gateway restarts (common during config updates).
+- **Retry Logic**: Uses `hashicorp/go-retryablehttp` with up to 10 retries to handle transient network failures or Gateway restarts. Configuration changes in Ignition often trigger module restarts; the client is designed to persist through these periods.
 - **Type Definitions**: Contains Go struct definitions for Ignition's configuration objects (e.g., `Project`, `DatabaseConfig`, `TagProviderConfig`).
-- **Resource Waiting**: Implements specific polling logic for heavy resources like Projects, which may take moments to initialize after creation.
+- **Resource Waiting**: Implemented polling logic for resources that are not immediately available after creation, such as Projects (which poll every 200ms for up to 10s).
 
 ### 3. Security & Crypto
 
 Ignition requires specific handling for sensitive fields like Database passwords or SMTP credentials.
 
 - **Encryption**: The provider does **not** send passwords in plaintext in the JSON body.
-- **Encryption Endpoint**: It uses the `/data/api/v1/encryption/encrypt` endpoint to transform a plaintext secret into an **Embedded Secret** (JWE format) understood by the Gateway.
-- **State Storage**: The encrypted value (JWE) or the state signature is stored in Terraform state, ensuring the plaintext password is never exposed in API logs, though it must exist in the Terraform configuration.
+- **Encryption Endpoint**: It uses the `/data/api/v1/encryption/encrypt` endpoint to transform a plaintext secret into an **Embedded Secret** (JWE format). This happens in-flight during the `Create` or `Update` phase.
+- **State Storage**: The encrypted value or the state signature is stored in Terraform state, ensuring the plaintext password is never exposed in API logs or stored unencrypted in the state file.
+
+## Key Abstractions
+
+### Signatures & Concurrency
+
+Most Ignition resources utilize a **Signature** (a unique hash of the current configuration). 
+
+- **Optimistic Locking**: When updating or deleting a resource, the provider sends the last known signature. If the resource was modified manually in the Gateway since the last Terraform run, the signatures will mismatch, and the API will reject the change.
+- **Automatic Reconciliation**: Terraform handles this via drift detection. A `terraform plan` will fetch the latest signature and configuration, allowing you to reconcile changes safely.
+
+### Gateway Restarts & Persistence
+
+Certain resources (like Database Connections or OPC UA Devices) may trigger a module-level restart when their configuration is changed.
+
+- **Retry Policy**: The internal client uses a backoff-retry strategy. If the Gateway API becomes temporarily unavailable during a restart, the provider will wait and retry the operation until it succeeds or the 10-attempt limit is reached.
+- **Project Polling**: Projects involve file-system operations on the Gateway. The provider includes a specific "wait-for-ready" lifecycle step to ensure the project is fully initialized before returning control to Terraform.
 
 ## Resource Lifecycle
 

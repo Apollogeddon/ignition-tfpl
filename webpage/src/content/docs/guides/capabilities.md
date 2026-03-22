@@ -64,6 +64,29 @@ resource "ignition_project" "site_a" {
 }
 ```
 
+## Importing Existing Resources
+
+If you have an existing Ignition Gateway with configuration not currently managed by Terraform, you can bring those resources under control using the `terraform import` command.
+
+Most resources are imported using their **Name**.
+
+**Example:**
+
+```bash
+# Import an existing database connection named "ProductionDB"
+terraform import ignition_database_connection.main ProductionDB
+
+# Import an existing project named "MainDashboard"
+terraform import ignition_project.main MainDashboard
+```
+
+For **Singleton** resources (like Redundancy or GAN Settings), the identifier is usually the same as the resource type or a fixed keyword.
+
+```bash
+# Import Gateway Network settings
+terraform import ignition_gan_settings.global gateway-network-settings
+```
+
 ## Feature Highlights
 
 - **Polymorphism**: Resources like `ignition_device` or `ignition_user_source` automatically adapt their validation and available fields based on the `type` selected.
