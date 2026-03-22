@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Ensure base directory exists (updated to sources)
-mkdir -p webpage/src/content/docs/sources
+# Ensure base directory exists (reference matches Sidebar.astro)
+mkdir -p webpage/src/content/docs/reference
 
 # Process all markdown files in docs/ recursively
 find docs -type f -name "*.md" | while read -r file; do
@@ -17,11 +17,11 @@ find docs -type f -name "*.md" | while read -r file; do
     target_name="ignition_$base_part"
   fi
   
-  # Determine final destination path in the sources/ directory
+  # Determine final destination path in the reference/ directory
   if [[ "$dir_part" == "." ]]; then
-    dest_path="webpage/src/content/docs/sources/$target_name"
+    dest_path="webpage/src/content/docs/reference/$target_name"
   else
-    dest_path="webpage/src/content/docs/sources/$dir_part/$target_name"
+    dest_path="webpage/src/content/docs/reference/$dir_part/$target_name"
   fi
   
   # Create target subdirectory if it doesn't exist
