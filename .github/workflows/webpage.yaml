@@ -19,6 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -26,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22"
           cache: 'npm'
           cache-dependency-path: webpage/package-lock.json
 
@@ -40,12 +41,10 @@ jobs:
           cache: true
 
       - name: Generate Docs
-        run: |
-          go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.20.1
-          go generate ./...
+        run: sh .github/scripts/ci/generate-docs.sh
 
       - name: Migrate Docs
-        run: bash .github/scripts/document.sh
+        run: sh .github/scripts/ci/migrate-docs.sh
 
       - name: Build site
         run: cd webpage && npm run build
@@ -59,6 +58,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
