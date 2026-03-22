@@ -21,3 +21,7 @@ updates:
     directory: "/webpage"
     schedule:
       interval: "weekly"
+    groups:
+      webpage:
+        patterns:
+          - "*"
