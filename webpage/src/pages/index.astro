@@ -1,0 +1,27 @@
+---
+import logoImage from "../assets/favicon.png";
+import ArchitectureComparison from "../components/ArchitectureComparison.astro";
+import FeatureGrid from "../components/FeatureGrid.astro";
+import Hero from "../components/Hero.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const base = import.meta.env.BASE_URL;
+---
+
+<BaseLayout title="Ignition TF Provider" description="Manage your Inductive Automation Ignition Gateway infrastructure as code.">
+  <Hero 
+    tagline="Manage your Inductive Automation Ignition Gateway infrastructure as code."
+    logo={logoImage}
+  />
+  
+  <FeatureGrid />
+  
+  <ArchitectureComparison />
+  
+  <footer class="custom-footer">
+    <div class="footer-content">
+      <p>Released under the MIT License.</p>
+      <p>Built with Astro.</p>
+    </div>
+  </footer>
+</BaseLayout>
