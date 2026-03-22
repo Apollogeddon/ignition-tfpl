@@ -1,0 +1,117 @@
+---
+const features = [
+	{
+		title: "Infrastructure as Code",
+		description:
+			"Version control your entire Ignition Gateway configuration. Manage projects and connections alongside your infrastructure.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`,
+	},
+	{
+		title: "Secure by Design",
+		description:
+			"Secrets are encrypted in-flight using Ignition's native JWE encryption endpoints. No plaintext passwords in API logs.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>`,
+	},
+	{
+		title: "Drift Detection",
+		description:
+			"Automatically detect and reconcile manual changes made via the Ignition Designer or Gateway Web Interface.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+	},
+	{
+		title: "Resource Parity",
+		description:
+			"Comprehensive support for Projects, Database Connections, Tag Providers, Identity Providers, and more.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+	},
+	{
+		title: "Enterprise Ready",
+		description:
+			"Support for complex setups including Redundancy roles, Gateway Network (GAN) settings, and SMTP profiles.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-6-6m6 6v-4.8m0 4.8h-4.8"/><path d="M3 16.2V21m0 0h4.8M3 21l6-6"/><path d="M21 7.8V3m0 0h-4.8M21 3l-6 6"/><path d="M3 7.8V3m0 0h4.8M3 3l6 6"/></svg>`,
+	},
+	{
+		title: "Open Source",
+		description:
+			"Community driven and fully open source. Extensible architecture using the HashiCorp Plugin Framework.",
+		icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+	},
+];
+---
+
+<section class="features-section">
+  <h2>Why use <span class="text-gradient">this provider?</span></h2>
+  
+  <div class="grid">
+    {features.map(feature => (
+      <div class="feature-card glass">
+        <div class="icon-wrapper" set:html={feature.icon}></div>
+        <h3>{feature.title}</h3>
+        <p>{feature.description}</p>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .features-section {
+    padding: 6rem 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 4rem;
+    font-weight: 800;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+
+  .feature-card {
+    padding: 2.5rem;
+    border-radius: 20px;
+    text-align: left;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--sl-color-accent);
+    background: rgba(var(--sl-color-accent-rgb), 0.03);
+    box-shadow: 0 20px 40px -12px rgba(var(--sl-color-accent-rgb), 0.15);
+  }
+
+  .icon-wrapper {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--sl-color-accent-rgb), 0.1);
+    color: var(--sl-color-accent);
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--sl-color-text);
+  }
+
+  p {
+    color: var(--sl-color-text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+</style>
