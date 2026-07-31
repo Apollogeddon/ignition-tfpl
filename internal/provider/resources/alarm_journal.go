@@ -130,7 +130,8 @@ func (r *AlarmJournalResource) Configure(ctx context.Context, req resource.Confi
 	r.generic = base.GenericIgnitionResource[client.AlarmJournalConfig, AlarmJournalResourceModel]{
 		Client:       c,
 		Handler:      r,
-		ResourceType: "ignition/alarm-journal",
+		Module:       "ignition",
+		ResourceType: "alarm-journal",
 		CreateFunc:   c.CreateAlarmJournal,
 		GetFunc:      c.GetAlarmJournal,
 		UpdateFunc:   c.UpdateAlarmJournal,
