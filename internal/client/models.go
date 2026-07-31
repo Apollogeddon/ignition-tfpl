@@ -262,9 +262,20 @@ type IdentityProviderSamlConfig struct {
 	SignatureVerifyingKeys         []any    `json:"signatureVerifyingKeys"`
 }
 
+type IdentityProviderSecurityLevelRules struct {
+	Nodes []any `json:"nodes"`
+}
+
+type IdentityProviderProfile struct {
+	Type                string                             `json:"type"`
+	UserAttributeMapper map[string]any                     `json:"userAttributeMapper"`
+	UserGrants          map[string]any                     `json:"userGrants"`
+	SecurityLevelRules  IdentityProviderSecurityLevelRules `json:"securityLevelRules"`
+}
+
 type IdentityProviderConfig struct {
-	Type   string `json:"type"`
-	Config any    `json:"config"`
+	Profile  IdentityProviderProfile `json:"profile"`
+	Settings any                     `json:"settings"`
 }
 
 type GanOutgoingConfig struct {

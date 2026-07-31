@@ -103,14 +103,19 @@ func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 	return &Client{HTTPClient: rc, HostURL: host, Token: token}, nil
 }
 
-func (c *Client) doRequest(ctx context.Context, method, path string, body []byte) ([]byte, error) {
+func (c *Client) doRequest(ctx context.Context, method, path string, body []byte, contentType ...string) ([]byte, error) {
 	req, err := retryablehttp.NewRequestWithContext(ctx, method, c.HostURL+path, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
 
+	ct := "application/json"
+	if len(contentType) > 0 {
+		ct = contentType[0]
+	}
+
 	req.Header.Set("X-Ignition-API-Token", c.Token)
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", ct)
 	req.Header.Set("Accept", "application/json")
 
 	res, err := c.HTTPClient.Do(req)
@@ -126,7 +131,8 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body []byte
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		var apiErr APIErrorResponse
-		if err := json.Unmarshal(bodyBytes, &apiErr); err == nil && apiErr.Problem != nil {
+		if err := json.Unmarshal(bodyBytes, &apiErr); err == nil &&
+			(apiErr.Problem != nil || len(apiErr.Messages) > 0 || len(apiErr.FieldMessages) > 0) {
 			return nil, &apiErr
 		}
 		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, bodyBytes)

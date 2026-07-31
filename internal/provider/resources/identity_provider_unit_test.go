@@ -18,6 +18,12 @@ func TestUnitIdentityProviderResource_Create(t *testing.T) {
 			if item.Name != "unit-test-idp" {
 				return nil, fmt.Errorf("expected name 'unit-test-idp', got '%s'", item.Name)
 			}
+			if item.Module != "ignition" {
+				return nil, fmt.Errorf("expected module 'ignition', got '%s'", item.Module)
+			}
+			if item.Type != "identity-provider" {
+				return nil, fmt.Errorf("expected type 'identity-provider', got '%s'", item.Type)
+			}
 
 			// Simulate successful creation
 			item.Signature = "mock-signature-idp"
@@ -41,8 +47,8 @@ func TestUnitIdentityProviderResource_Create(t *testing.T) {
 				Enabled:   base.BoolPtr(true),
 				Signature: "mock-signature-idp",
 				Config: client.IdentityProviderConfig{
-					Type:   "internal",
-					Config: internalConfig,
+					Profile:  client.IdentityProviderProfile{Type: "internal"},
+					Settings: internalConfig,
 				},
 			}, nil
 		},
@@ -87,8 +93,8 @@ func TestUnitIdentityProviderResource_Create(t *testing.T) {
 func TestUnitIdentityProviderResource_OIDC(t *testing.T) {
 	mockClient := &client.MockClient{
 		CreateIdentityProviderFunc: func(ctx context.Context, item client.ResourceResponse[client.IdentityProviderConfig]) (*client.ResourceResponse[client.IdentityProviderConfig], error) {
-			if item.Config.Type != "oidc" {
-				return nil, fmt.Errorf("expected type 'oidc', got '%s'", item.Config.Type)
+			if item.Config.Profile.Type != "oidc" {
+				return nil, fmt.Errorf("expected type 'oidc', got '%s'", item.Config.Profile.Type)
 			}
 			item.Signature = "mock-signature-oidc"
 			return &item, nil
@@ -104,8 +110,8 @@ func TestUnitIdentityProviderResource_OIDC(t *testing.T) {
 				Enabled:   base.BoolPtr(true),
 				Signature: "mock-signature-oidc",
 				Config: client.IdentityProviderConfig{
-					Type:   "oidc",
-					Config: oidcConfig,
+					Profile:  client.IdentityProviderProfile{Type: "oidc"},
+					Settings: oidcConfig,
 				},
 			}, nil
 		},

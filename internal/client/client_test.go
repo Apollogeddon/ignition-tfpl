@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestClient_GetResource(t *testing.T) {
@@ -558,7 +561,7 @@ func TestClient_IdentityProviderOperations(t *testing.T) {
 			response := ResourceResponse[IdentityProviderConfig]{
 				Name:      "test-idp",
 				Signature: "sig-idp",
-				Config:    IdentityProviderConfig{Type: "Ignition"},
+				Config:    IdentityProviderConfig{Profile: IdentityProviderProfile{Type: "Ignition"}},
 			}
 			_ = json.NewEncoder(w).Encode(response)
 			return
@@ -567,7 +570,7 @@ func TestClient_IdentityProviderOperations(t *testing.T) {
 			{
 				Name:      "test-idp",
 				Signature: "sig-idp",
-				Config:    IdentityProviderConfig{Type: "Ignition"},
+				Config:    IdentityProviderConfig{Profile: IdentityProviderProfile{Type: "Ignition"}},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(response)
@@ -713,6 +716,62 @@ func TestClient_EncryptSecret(t *testing.T) {
 	dataMap := secret.Data.(map[string]interface{})
 	if dataMap["jwe"] != "mock-jwe" {
 		t.Errorf("Expected jwe mock-jwe, got %v", dataMap["jwe"])
+	}
+}
+
+func TestClient_EncryptSecret_RetryOn503(t *testing.T) {
+	var reqCount int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&reqCount, 1)
+		if count <= 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("Service Restarting"))
+			return
+		}
+		response := map[string]interface{}{"jwe": "mock-jwe"}
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	c, err := NewClient(server.URL, "token", false)
+	if err != nil {
+		t.Fatalf("Failed to create client: %v", err)
+	}
+	c.HTTPClient.RetryWaitMin = 10 * time.Millisecond
+	c.HTTPClient.RetryWaitMax = 50 * time.Millisecond
+
+	secret, err := c.EncryptSecret(context.Background(), "my-password")
+	if err != nil {
+		t.Fatalf("Expected success after retries, got error: %v", err)
+	}
+	if atomic.LoadInt32(&reqCount) != 4 {
+		t.Errorf("Expected 4 requests (3 retries), got %d", reqCount)
+	}
+	dataMap := secret.Data.(map[string]interface{})
+	if dataMap["jwe"] != "mock-jwe" {
+		t.Errorf("Expected jwe mock-jwe, got %v", dataMap["jwe"])
+	}
+}
+
+func TestClient_EncryptSecret_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{
+			"success": false,
+			"messages": ["Encryption failed"]
+		}`))
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+
+	_, err := c.EncryptSecret(context.Background(), "my-password")
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+	if !strings.Contains(err.Error(), "Encryption failed") {
+		t.Errorf("Expected structured error message, got: %s", err.Error())
 	}
 }
 
