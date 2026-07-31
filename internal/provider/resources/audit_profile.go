@@ -26,7 +26,7 @@ func NewAuditProfileResource() resource.Resource {
 
 // AuditProfileResource defines the resource implementation.
 type AuditProfileResource struct {
-	base.GenericIgnitionResource[client.AuditProfileConfig, AuditProfileResourceModel]
+	generic base.GenericIgnitionResource[client.AuditProfileConfig, AuditProfileResourceModel]
 }
 
 // AuditProfileResourceModel describes the resource data model.
@@ -141,14 +141,16 @@ func (r *AuditProfileResource) Configure(ctx context.Context, req resource.Confi
 		return
 	}
 
-	r.Client = apiClient
-	r.Handler = r
-	r.Module = "ignition"
-	r.ResourceType = "audit-profile"
-	r.CreateFunc = apiClient.CreateAuditProfile
-	r.GetFunc = apiClient.GetAuditProfile
-	r.UpdateFunc = apiClient.UpdateAuditProfile
-	r.DeleteFunc = apiClient.DeleteAuditProfile
+	r.generic = base.GenericIgnitionResource[client.AuditProfileConfig, AuditProfileResourceModel]{
+		Client:       apiClient,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "audit-profile",
+		CreateFunc:   apiClient.CreateAuditProfile,
+		GetFunc:      apiClient.GetAuditProfile,
+		UpdateFunc:   apiClient.UpdateAuditProfile,
+		DeleteFunc:   apiClient.DeleteAuditProfile,
+	}
 }
 
 func (r *AuditProfileResource) MapPlanToClient(ctx context.Context, model *AuditProfileResourceModel) (client.AuditProfileConfig, error) {
@@ -224,22 +226,22 @@ func (r *AuditProfileResource) MapClientToState(ctx context.Context, name string
 
 func (r *AuditProfileResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data AuditProfileResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AuditProfileResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data AuditProfileResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AuditProfileResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data AuditProfileResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AuditProfileResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data AuditProfileResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AuditProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
