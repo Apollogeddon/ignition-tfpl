@@ -23,7 +23,7 @@ func NewProjectResource() resource.Resource {
 
 // ProjectResource defines the resource implementation.
 type ProjectResource struct {
-	base.GenericIgnitionResource[client.Project, ProjectResourceModel]
+	generic base.GenericIgnitionResource[client.Project, ProjectResourceModel]
 }
 
 // ProjectResourceModel describes the resource data model.
@@ -119,48 +119,50 @@ func (r *ProjectResource) Configure(ctx context.Context, req resource.ConfigureR
 		return
 	}
 
-	r.Client = apiClient
-	r.Handler = r
-	r.Module = "ignition"
-	r.ResourceType = "project"
-	r.CreateFunc = func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
-		p, err := apiClient.CreateProject(ctx, res.Config)
-		if err != nil {
-			return nil, err
-		}
-		return &client.ResourceResponse[client.Project]{
-			Name:      p.Name,
-			Enabled:   &p.Enabled,
-			Signature: p.Name,
-			Config:    *p,
-		}, nil
-	}
-	r.GetFunc = func(ctx context.Context, name string) (*client.ResourceResponse[client.Project], error) {
-		p, err := apiClient.GetProject(ctx, name)
-		if err != nil {
-			return nil, err
-		}
-		return &client.ResourceResponse[client.Project]{
-			Name:      p.Name,
-			Enabled:   &p.Enabled,
-			Signature: p.Name,
-			Config:    *p,
-		}, nil
-	}
-	r.UpdateFunc = func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
-		p, err := apiClient.UpdateProject(ctx, res.Config)
-		if err != nil {
-			return nil, err
-		}
-		return &client.ResourceResponse[client.Project]{
-			Name:      p.Name,
-			Enabled:   &p.Enabled,
-			Signature: p.Name,
-			Config:    *p,
-		}, nil
-	}
-	r.DeleteFunc = func(ctx context.Context, name, signature string) error {
-		return apiClient.DeleteProject(ctx, name)
+	r.generic = base.GenericIgnitionResource[client.Project, ProjectResourceModel]{
+		Client:       apiClient,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "project",
+		CreateFunc: func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
+			p, err := apiClient.CreateProject(ctx, res.Config)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.Project]{
+				Name:      p.Name,
+				Enabled:   &p.Enabled,
+				Signature: p.Name,
+				Config:    *p,
+			}, nil
+		},
+		GetFunc: func(ctx context.Context, name string) (*client.ResourceResponse[client.Project], error) {
+			p, err := apiClient.GetProject(ctx, name)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.Project]{
+				Name:      p.Name,
+				Enabled:   &p.Enabled,
+				Signature: p.Name,
+				Config:    *p,
+			}, nil
+		},
+		UpdateFunc: func(ctx context.Context, res client.ResourceResponse[client.Project]) (*client.ResourceResponse[client.Project], error) {
+			p, err := apiClient.UpdateProject(ctx, res.Config)
+			if err != nil {
+				return nil, err
+			}
+			return &client.ResourceResponse[client.Project]{
+				Name:      p.Name,
+				Enabled:   &p.Enabled,
+				Signature: p.Name,
+				Config:    *p,
+			}, nil
+		},
+		DeleteFunc: func(ctx context.Context, name, signature string) error {
+			return apiClient.DeleteProject(ctx, name)
+		},
 	}
 }
 
@@ -214,22 +216,22 @@ func (r *ProjectResource) MapClientToState(ctx context.Context, name string, p *
 
 func (r *ProjectResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data ProjectResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *ProjectResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data ProjectResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *ProjectResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data ProjectResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *ProjectResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data ProjectResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *ProjectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

@@ -26,7 +26,7 @@ func NewDatabaseConnectionResource() resource.Resource {
 
 // DatabaseConnectionResource defines the resource implementation.
 type DatabaseConnectionResource struct {
-	base.GenericIgnitionResource[client.DatabaseConfig, DatabaseConnectionResourceModel]
+	generic base.GenericIgnitionResource[client.DatabaseConfig, DatabaseConnectionResourceModel]
 }
 
 // DatabaseConnectionResourceModel describes the resource data model.
@@ -122,14 +122,16 @@ func (r *DatabaseConnectionResource) Configure(ctx context.Context, req resource
 		return
 	}
 
-	r.Client = apiClient
-	r.Handler = r
-	r.Module = "ignition"
-	r.ResourceType = "database-connection"
-	r.CreateFunc = apiClient.CreateDatabaseConnection
-	r.GetFunc = apiClient.GetDatabaseConnection
-	r.UpdateFunc = apiClient.UpdateDatabaseConnection
-	r.DeleteFunc = apiClient.DeleteDatabaseConnection
+	r.generic = base.GenericIgnitionResource[client.DatabaseConfig, DatabaseConnectionResourceModel]{
+		Client:       apiClient,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "database-connection",
+		CreateFunc:   apiClient.CreateDatabaseConnection,
+		GetFunc:      apiClient.GetDatabaseConnection,
+		UpdateFunc:   apiClient.UpdateDatabaseConnection,
+		DeleteFunc:   apiClient.DeleteDatabaseConnection,
+	}
 }
 
 func (r *DatabaseConnectionResource) MapPlanToClient(ctx context.Context, model *DatabaseConnectionResourceModel) (client.DatabaseConfig, error) {
@@ -143,7 +145,7 @@ func (r *DatabaseConnectionResource) MapPlanToClient(ctx context.Context, model 
 		config.Username = model.Username.ValueString()
 	}
 	if !model.Password.IsNull() {
-		encrypted, err := r.Client.EncryptSecret(ctx, model.Password.ValueString())
+		encrypted, err := r.generic.Client.EncryptSecret(ctx, model.Password.ValueString())
 		if err != nil {
 			return client.DatabaseConfig{}, err
 		}
@@ -178,22 +180,22 @@ func (r *DatabaseConnectionResource) MapClientToState(ctx context.Context, name 
 
 func (r *DatabaseConnectionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data DatabaseConnectionResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DatabaseConnectionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data DatabaseConnectionResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DatabaseConnectionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data DatabaseConnectionResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DatabaseConnectionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data DatabaseConnectionResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DatabaseConnectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

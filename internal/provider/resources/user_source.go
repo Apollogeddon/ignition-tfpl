@@ -24,7 +24,7 @@ func NewUserSourceResource() resource.Resource {
 
 // UserSourceResource defines the resource implementation.
 type UserSourceResource struct {
-	base.GenericIgnitionResource[client.UserSourceConfig, UserSourceResourceModel]
+	generic base.GenericIgnitionResource[client.UserSourceConfig, UserSourceResourceModel]
 }
 
 // UserSourceResourceModel describes the resource data model.
@@ -100,7 +100,7 @@ func (r *UserSourceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	client, ok := req.ProviderData.(client.IgnitionClient)
+	apiClient, ok := req.ProviderData.(client.IgnitionClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Resource Configure Type",
@@ -109,14 +109,16 @@ func (r *UserSourceResource) Configure(ctx context.Context, req resource.Configu
 		return
 	}
 
-	r.Client = client
-	r.Handler = r
-	r.Module = "ignition"
-	r.ResourceType = "user-source"
-	r.CreateFunc = client.CreateUserSource
-	r.GetFunc = client.GetUserSource
-	r.UpdateFunc = client.UpdateUserSource
-	r.DeleteFunc = client.DeleteUserSource
+	r.generic = base.GenericIgnitionResource[client.UserSourceConfig, UserSourceResourceModel]{
+		Client:       apiClient,
+		Handler:      r,
+		Module:       "ignition",
+		ResourceType: "user-source",
+		CreateFunc:   apiClient.CreateUserSource,
+		GetFunc:      apiClient.GetUserSource,
+		UpdateFunc:   apiClient.UpdateUserSource,
+		DeleteFunc:   apiClient.DeleteUserSource,
+	}
 }
 
 func (r *UserSourceResource) MapPlanToClient(ctx context.Context, model *UserSourceResourceModel) (client.UserSourceConfig, error) {
@@ -162,22 +164,22 @@ func (r *UserSourceResource) MapClientToState(ctx context.Context, name string, 
 
 func (r *UserSourceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data UserSourceResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *UserSourceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data UserSourceResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *UserSourceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data UserSourceResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *UserSourceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data UserSourceResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *UserSourceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

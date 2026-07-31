@@ -23,7 +23,7 @@ func NewDeviceResource() resource.Resource {
 }
 
 type DeviceResource struct {
-	Res base.GenericIgnitionResource[client.DeviceConfig, DeviceResourceModel]
+	generic base.GenericIgnitionResource[client.DeviceConfig, DeviceResourceModel]
 }
 
 type DeviceResourceModel struct {
@@ -96,14 +96,14 @@ func (r *DeviceResource) Configure(ctx context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.Res.Client = client
-	r.Res.Handler = r
-	r.Res.Module = "com.inductiveautomation.opcua"
-	r.Res.ResourceType = "device"
-	r.Res.CreateFunc = client.CreateDevice
-	r.Res.GetFunc = client.GetDevice
-	r.Res.UpdateFunc = client.UpdateDevice
-	r.Res.DeleteFunc = client.DeleteDevice
+	r.generic.Client = client
+	r.generic.Handler = r
+	r.generic.Module = "com.inductiveautomation.opcua"
+	r.generic.ResourceType = "device"
+	r.generic.CreateFunc = client.CreateDevice
+	r.generic.GetFunc = client.GetDevice
+	r.generic.UpdateFunc = client.UpdateDevice
+	r.generic.DeleteFunc = client.DeleteDevice
 }
 
 func (r *DeviceResource) MapPlanToClient(ctx context.Context, model *DeviceResourceModel) (client.DeviceConfig, error) {
@@ -160,7 +160,7 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	res := client.ResourceResponse[client.DeviceConfig]{
-		Module:  r.Res.Module,
+		Module:  r.generic.Module,
 		Type:    data.Type.ValueString(), // Use the driver type from the plan
 		Name:    data.Name.ValueString(),
 		Enabled: base.BoolPtr(data.Enabled.ValueBool()),
@@ -171,7 +171,7 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 		res.Description = data.Description.ValueString()
 	}
 
-	created, err := r.Res.CreateFunc(ctx, res)
+	created, err := r.generic.CreateFunc(ctx, res)
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating resource", err.Error())
 		return
@@ -206,7 +206,7 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 
 func (r *DeviceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data DeviceResourceModel
-	r.Res.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -231,7 +231,7 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	res := client.ResourceResponse[client.DeviceConfig]{
-		Module:    r.Res.Module,
+		Module:    r.generic.Module,
 		Type:      data.Type.ValueString(), // Use the driver type from the plan
 		Name:      data.Name.ValueString(),
 		Enabled:   base.BoolPtr(data.Enabled.ValueBool()),
@@ -243,7 +243,7 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 		res.Description = data.Description.ValueString()
 	}
 
-	updated, err := r.Res.UpdateFunc(ctx, res)
+	updated, err := r.generic.UpdateFunc(ctx, res)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating resource", err.Error())
 		return
@@ -252,7 +252,7 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if updated.Signature != "" {
 		data.Signature = types.StringValue(updated.Signature)
 	} else {
-		fresh, err := r.Res.GetFunc(ctx, data.Name.ValueString())
+		fresh, err := r.generic.GetFunc(ctx, data.Name.ValueString())
 		if err == nil && fresh.Signature != "" {
 			data.Signature = types.StringValue(fresh.Signature)
 			updated = fresh
@@ -292,7 +292,7 @@ func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 func (r *DeviceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data DeviceResourceModel
-	r.Res.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *DeviceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

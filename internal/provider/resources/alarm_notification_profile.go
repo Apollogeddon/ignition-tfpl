@@ -26,7 +26,7 @@ func NewAlarmNotificationProfileResource() resource.Resource {
 
 // AlarmNotificationProfileResource defines the resource implementation.
 type AlarmNotificationProfileResource struct {
-	base.GenericIgnitionResource[client.AlarmNotificationProfileConfig, AlarmNotificationProfileResourceModel]
+	generic base.GenericIgnitionResource[client.AlarmNotificationProfileConfig, AlarmNotificationProfileResourceModel]
 }
 
 // AlarmNotificationProfileResourceModel describes the resource data model.
@@ -147,14 +147,16 @@ func (r *AlarmNotificationProfileResource) Configure(ctx context.Context, req re
 		return
 	}
 
-	r.Client = apiClient
-	r.Handler = r
-	r.Module = "com.inductiveautomation.alarm-notification"
-	r.ResourceType = "alarm-notification-profile"
-	r.CreateFunc = apiClient.CreateAlarmNotificationProfile
-	r.GetFunc = apiClient.GetAlarmNotificationProfile
-	r.UpdateFunc = apiClient.UpdateAlarmNotificationProfile
-	r.DeleteFunc = apiClient.DeleteAlarmNotificationProfile
+	r.generic = base.GenericIgnitionResource[client.AlarmNotificationProfileConfig, AlarmNotificationProfileResourceModel]{
+		Client:       apiClient,
+		Handler:      r,
+		Module:       "com.inductiveautomation.alarm-notification",
+		ResourceType: "alarm-notification-profile",
+		CreateFunc:   apiClient.CreateAlarmNotificationProfile,
+		GetFunc:      apiClient.GetAlarmNotificationProfile,
+		UpdateFunc:   apiClient.UpdateAlarmNotificationProfile,
+		DeleteFunc:   apiClient.DeleteAlarmNotificationProfile,
+	}
 }
 
 func (r *AlarmNotificationProfileResource) MapPlanToClient(ctx context.Context, model *AlarmNotificationProfileResourceModel) (client.AlarmNotificationProfileConfig, error) {
@@ -185,7 +187,7 @@ func (r *AlarmNotificationProfileResource) MapPlanToClient(ctx context.Context, 
 			emailSettings["username"] = model.EmailConfig.Username.ValueString()
 		}
 		if !model.EmailConfig.Password.IsNull() {
-			encrypted, err := r.Client.EncryptSecret(ctx, model.EmailConfig.Password.ValueString())
+			encrypted, err := r.generic.Client.EncryptSecret(ctx, model.EmailConfig.Password.ValueString())
 			if err != nil {
 				return client.AlarmNotificationProfileConfig{}, err
 			}
@@ -254,22 +256,22 @@ func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context,
 
 func (r *AlarmNotificationProfileResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data AlarmNotificationProfileResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmNotificationProfileResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data AlarmNotificationProfileResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmNotificationProfileResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data AlarmNotificationProfileResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmNotificationProfileResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data AlarmNotificationProfileResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *AlarmNotificationProfileResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

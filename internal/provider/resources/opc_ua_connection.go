@@ -26,7 +26,7 @@ func NewOpcUaConnectionResource() resource.Resource {
 
 // OpcUaConnectionResource defines the resource implementation.
 type OpcUaConnectionResource struct {
-	base.GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]
+	generic base.GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]
 }
 
 // OpcUaConnectionResourceModel describes the resource data model.
@@ -131,7 +131,7 @@ func (r *OpcUaConnectionResource) Configure(ctx context.Context, req resource.Co
 		return
 	}
 
-	r.GenericIgnitionResource = base.GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]{
+	r.generic = base.GenericIgnitionResource[client.OpcUaConnectionConfig, OpcUaConnectionResourceModel]{
 		Client:       c,
 		Handler:      r,
 		Module:       "ignition",
@@ -176,22 +176,22 @@ func (r *OpcUaConnectionResource) MapClientToState(ctx context.Context, name str
 
 func (r *OpcUaConnectionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var data OpcUaConnectionResourceModel
-	r.GenericIgnitionResource.Create(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Create(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *OpcUaConnectionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data OpcUaConnectionResourceModel
-	r.GenericIgnitionResource.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *OpcUaConnectionResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data OpcUaConnectionResourceModel
-	r.GenericIgnitionResource.Update(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Update(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *OpcUaConnectionResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data OpcUaConnectionResourceModel
-	r.GenericIgnitionResource.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
+	r.generic.Delete(ctx, req, resp, &data, &data.BaseResourceModel)
 }
 
 func (r *OpcUaConnectionResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
