@@ -254,11 +254,33 @@ func (r *IdentityProviderResource) Configure(ctx context.Context, req resource.C
 	r.generic = base.GenericIgnitionResource[client.IdentityProviderConfig, IdentityProviderResourceModel]{
 		Client:       c,
 		Handler:      r,
-		ResourceType: "ignition/identity-provider",
+		Module:       "ignition",
+		ResourceType: "identity-provider",
 		CreateFunc:   c.CreateIdentityProvider,
 		GetFunc:      c.GetIdentityProvider,
 		UpdateFunc:   c.UpdateIdentityProvider,
 		DeleteFunc:   c.DeleteIdentityProvider,
+	}
+}
+
+// defaultIdentityProviderProfile builds a profile with the gateway's required
+// (but currently unconfigurable via this resource) attribute-mapper, grant,
+// and security-level-rule fields left at sensible defaults: id and userName
+// are mapped directly to the user source's username attribute, matching
+// what the Designer produces for a basic identity provider.
+func defaultIdentityProviderProfile(idpType string) client.IdentityProviderProfile {
+	directUsernameMapper := map[string]any{
+		"type":   "direct",
+		"config": map[string]any{"attributePath": "username"},
+	}
+	return client.IdentityProviderProfile{
+		Type: idpType,
+		UserAttributeMapper: map[string]any{
+			"id":       directUsernameMapper,
+			"userName": directUsernameMapper,
+		},
+		UserGrants:         map[string]any{},
+		SecurityLevelRules: client.IdentityProviderSecurityLevelRules{Nodes: []any{}},
 	}
 }
 
@@ -277,8 +299,8 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 			},
 		}
 		return client.IdentityProviderConfig{
-			Type:   "internal",
-			Config: internalConfig,
+			Profile:  defaultIdentityProviderProfile("internal"),
+			Settings: internalConfig,
 		}, nil
 	} else if model.Type.ValueString() == "oidc" {
 		oidcConfig := client.IdentityProviderOidcConfig{
@@ -301,8 +323,8 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 		}
 
 		return client.IdentityProviderConfig{
-			Type:   "oidc",
-			Config: oidcConfig,
+			Profile:  defaultIdentityProviderProfile("oidc"),
+			Settings: oidcConfig,
 		}, nil
 	} else if model.Type.ValueString() == "saml" {
 		samlConfig := client.IdentityProviderSamlConfig{
@@ -326,8 +348,8 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 		}
 
 		return client.IdentityProviderConfig{
-			Type:   "saml",
-			Config: samlConfig,
+			Profile:  defaultIdentityProviderProfile("saml"),
+			Settings: samlConfig,
 		}, nil
 	}
 
@@ -336,11 +358,27 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 
 func (r *IdentityProviderResource) MapClientToState(ctx context.Context, name string, config *client.IdentityProviderConfig, model *IdentityProviderResourceModel) error {
 	model.Name = types.StringValue(name)
-	model.Type = types.StringValue(config.Type)
+	model.Type = types.StringValue(config.Profile.Type)
 
-	configBytes, _ := json.Marshal(config.Config)
+	// Seed every Computed+Default attribute with its schema default so that
+	// Read/Import produce the same state as Create for whichever type-specific
+	// fields don't apply to this identity provider's type. The per-type cases
+	// below overwrite the ones that are actually relevant.
+	model.SessionInactivityTimeout = types.Float64Value(0)
+	model.SessionExp = types.Float64Value(0)
+	model.RememberMeExp = types.Float64Value(0)
+	model.JwkEndpointEnabled = types.BoolValue(true)
+	model.SpEntityIdEnabled = types.BoolValue(false)
+	model.AcsBinding = types.StringValue("urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST")
+	model.NameIdFormat = types.StringValue("urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified")
+	model.ForceAuthn = types.BoolValue(false)
+	model.ResponseSignaturesRequired = types.BoolValue(true)
+	model.AssertionSignaturesRequired = types.BoolValue(true)
+	model.IdpMetadataUrlEnabled = types.BoolValue(true)
 
-	switch config.Type {
+	configBytes, _ := json.Marshal(config.Settings)
+
+	switch config.Profile.Type {
 	case "internal":
 		var internalConfig client.IdentityProviderInternalConfig
 		if err := json.Unmarshal(configBytes, &internalConfig); err == nil {
