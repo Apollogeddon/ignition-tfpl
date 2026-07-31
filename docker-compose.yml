@@ -1,6 +1,10 @@
 services:
   ignition:
-    image: inductiveautomation/ignition:8.3.2
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM inductiveautomation/ignition:8.3.2
+        COPY assets/ignition.gwbk /restore.gwbk
     container_name: ignition-tfpl
     ports:
       - "8088:8088"
@@ -9,8 +13,6 @@ services:
       - GATEWAY_ADMIN_PASSWORD=password123
       - GATEWAY_ADMIN_USERNAME=admin
       - IGNITION_EDITION=standard
-    volumes:
-      - ./assets/ignition.gwbk:/restore.gwbk
     post_start:
       - command: /usr/local/bin/ignition/gwcmd.sh -s /restore.gwbk -y
       - command: /usr/local/bin/ignition/gwcmd.sh -r
