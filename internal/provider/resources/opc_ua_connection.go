@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -74,7 +75,7 @@ func (r *OpcUaConnectionResource) Schema(ctx context.Context, req resource.Schem
 				Description: "The type of the OPC UA connection (e.g., com.inductiveautomation.OpcUaServerType).",
 				Optional:    true,
 				Computed:    true,
-				// Default to standard OPC UA Server type if not provided
+				Default:     stringdefault.StaticString("com.inductiveautomation.OpcUaServerType"),
 			},
 			"discovery_url": schema.StringAttribute{
 				Description: "The discovery URL of the OPC UA server.",
