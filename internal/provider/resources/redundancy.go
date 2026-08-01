@@ -12,7 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -65,6 +67,9 @@ func (r *RedundancyResource) Schema(ctx context.Context, req resource.SchemaRequ
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "Internal name for the resource (fixed to 'gateway-redundancy').",
@@ -112,6 +117,9 @@ func (r *RedundancyResource) Schema(ctx context.Context, req resource.SchemaRequ
 			},
 			"signature": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"gateway_network_setup": schema.SingleNestedAttribute{
 				Description: "Gateway network settings to establish a connection to the redundant master. (Only applies to Backup)",
@@ -194,7 +202,14 @@ func (r *RedundancyResource) Configure(ctx context.Context, req resource.Configu
 			}, nil
 		},
 		DeleteFunc: func(ctx context.Context, _, _ string) error {
-			return c.UpdateRedundancyConfig(ctx, client.RedundancyConfig{Role: "Independent"})
+			// The gateway rejects a zero-valued JoinWaitTime, so reset to the
+			// same defaults the schema uses rather than an all-zero config.
+			return c.UpdateRedundancyConfig(ctx, client.RedundancyConfig{
+				Role:               "Independent",
+				ActiveHistoryLevel: "Full",
+				JoinWaitTime:       10000,
+				RecoveryMode:       "Automatic",
+			})
 		},
 	}
 }
@@ -247,7 +262,11 @@ func (r *RedundancyResource) MapClientToState(ctx context.Context, name string, 
 	model.RecoveryMode = types.StringValue(config.RecoveryMode)
 	model.AllowHistoryCleanup = types.BoolValue(config.AllowHistoryCleanup)
 
-	if config.GatewayNetworkSetup != nil {
+	// gateway_network_setup is Optional (not Computed): the gateway always
+	// returns some populated struct here regardless of role, but Terraform
+	// only allows the provider to report a value for this attribute if the
+	// user actually configured it.
+	if config.GatewayNetworkSetup != nil && model.GatewayNetworkSetup != nil {
 		model.GatewayNetworkSetup = &GatewayNetworkSetup{
 			Host:               types.StringValue(config.GatewayNetworkSetup.Host),
 			Port:               types.Int64Value(int64(config.GatewayNetworkSetup.Port)),

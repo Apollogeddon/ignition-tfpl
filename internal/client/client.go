@@ -147,9 +147,18 @@ func (c *Client) GetResource(ctx context.Context, resourceType, name string, des
 
 func (c *Client) GetResourceWithModule(ctx context.Context, module, resourceType, name string, dest any) error {
 	path := fmt.Sprintf("/data/api/v1/resources/find/%s/%s/%s", module, resourceType, name)
-	if name == "" {
-		path = fmt.Sprintf("/data/api/v1/resources/find/%s/%s", module, resourceType)
+	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return err
 	}
+	return json.Unmarshal(body, dest)
+}
+
+// GetResourceSingleton reads a gateway-wide singleton resource (one that has
+// no name of its own, e.g. gateway network settings), which the API exposes
+// under a dedicated path rather than the name-based find endpoint.
+func (c *Client) GetResourceSingleton(ctx context.Context, module, resourceType string, dest any) error {
+	path := fmt.Sprintf("/data/api/v1/resources/singleton/%s/%s", module, resourceType)
 	body, err := c.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return err
@@ -178,6 +187,23 @@ func (c *Client) CreateResource(ctx context.Context, resourceType string, item, 
 
 func (c *Client) UpdateResource(ctx context.Context, resourceType string, item, dest any) error {
 	return c.createOrUpdate(ctx, http.MethodPut, "ignition", resourceType, item, dest)
+}
+
+// updateSingleton is like createOrUpdate but follows up with
+// GetResourceSingleton rather than the name-based find endpoint, since
+// singleton resources have no name to look up by.
+func (c *Client) updateSingleton(ctx context.Context, module, resourceType string, item, dest any) error {
+	rb, err := json.Marshal([]any{item})
+	if err != nil {
+		return err
+	}
+
+	path := fmt.Sprintf("/data/api/v1/resources/%s/%s", module, resourceType)
+	if _, err := c.doRequest(ctx, http.MethodPut, path, rb); err != nil {
+		return err
+	}
+
+	return c.GetResourceSingleton(ctx, module, resourceType, dest)
 }
 
 func (c *Client) CreateResourceWithModule(ctx context.Context, module, resourceType string, item, dest any) error {
@@ -426,31 +452,83 @@ func (c *Client) UpdateRedundancyConfig(ctx context.Context, config RedundancyCo
 	if err != nil {
 		return err
 	}
-	_, err = c.doRequest(ctx, http.MethodPost, "/data/api/v1/redundancy/config", rb)
+	_, err = c.doRequest(ctx, http.MethodPut, "/data/api/v1/redundancy/config", rb)
 	return err
 }
 
+// Singleton resources have no name of their own, so the gateway never
+// includes one in singleton GET responses; fill in the fixed logical name
+// the rest of the provider expects to see.
+const ganGeneralSettingsName = "gateway-network-settings"
+
 func (c *Client) GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[GanGeneralSettingsConfig], error) {
-	return getR[GanGeneralSettingsConfig](ctx, c, "ignition", "gateway-network-settings", "")
+	var r ResourceResponse[GanGeneralSettingsConfig]
+	err := c.GetResourceSingleton(ctx, "ignition", ganGeneralSettingsName, &r)
+	if err != nil {
+		return nil, err
+	}
+	r.Name = ganGeneralSettingsName
+	return &r, nil
 }
 func (c *Client) UpdateGanGeneralSettings(ctx context.Context, i ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error) {
 	var r ResourceResponse[GanGeneralSettingsConfig]
-	err := c.UpdateResource(ctx, "gateway-network-settings", i, &r)
-	return &r, err
+	err := c.updateSingleton(ctx, "ignition", ganGeneralSettingsName, i, &r)
+	if err != nil {
+		return nil, err
+	}
+	r.Name = ganGeneralSettingsName
+	return &r, nil
+}
+
+// deviceFromWire and deviceToWire translate between the flat DeviceConfig the
+// rest of the provider works with and the profile/settings envelope the
+// gateway actually requires on the wire.
+func deviceFromWire(r ResourceResponse[DeviceWireConfig]) *ResourceResponse[DeviceConfig] {
+	return &ResourceResponse[DeviceConfig]{
+		Module: r.Module,
+		// The outer "type" is the generic resource-type identifier
+		// (e.g. "com.inductiveautomation.opcua/device"); the actual
+		// driver flavor lives in config.profile.type.
+		Type:        r.Config.Profile.Type,
+		Name:        r.Name,
+		Enabled:     r.Enabled,
+		Description: r.Description,
+		Signature:   r.Signature,
+		Config:      r.Config.Settings,
+	}
+}
+
+func deviceToWire(i ResourceResponse[DeviceConfig]) ResourceResponse[DeviceWireConfig] {
+	return ResourceResponse[DeviceWireConfig]{
+		Module:      i.Module,
+		Type:        i.Type,
+		Name:        i.Name,
+		Enabled:     i.Enabled,
+		Description: i.Description,
+		Signature:   i.Signature,
+		Config: DeviceWireConfig{
+			Profile:  DeviceWireProfile{Type: i.Type},
+			Settings: i.Config,
+		},
+	}
 }
 
 func (c *Client) GetDevice(ctx context.Context, n string) (*ResourceResponse[DeviceConfig], error) {
-	return getR[DeviceConfig](ctx, c, "com.inductiveautomation.opcua", "device", n)
+	r, err := getR[DeviceWireConfig](ctx, c, "com.inductiveautomation.opcua", "device", n)
+	if err != nil {
+		return nil, err
+	}
+	return deviceFromWire(*r), nil
 }
 func (c *Client) CreateDevice(ctx context.Context, i ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
-	var r ResourceResponse[DeviceConfig]
-	err := c.CreateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", i, &r)
-	return &r, err
+	var r ResourceResponse[DeviceWireConfig]
+	err := c.CreateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", deviceToWire(i), &r)
+	return deviceFromWire(r), err
 }
 func (c *Client) UpdateDevice(ctx context.Context, i ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
-	var r ResourceResponse[DeviceConfig]
-	err := c.UpdateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", i, &r)
-	return &r, err
+	var r ResourceResponse[DeviceWireConfig]
+	err := c.UpdateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", deviceToWire(i), &r)
+	return deviceFromWire(r), err
 }
 func (c *Client) DeleteDevice(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", n, s)

@@ -206,7 +206,45 @@ func (r *DeviceResource) Create(ctx context.Context, req resource.CreateRequest,
 
 func (r *DeviceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data DeviceResourceModel
-	r.generic.Read(ctx, req, resp, &data, &data.BaseResourceModel)
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if data.Name.ValueString() == "" {
+		return
+	}
+
+	res, err := r.generic.GetFunc(ctx, data.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Error reading resource", err.Error())
+		return
+	}
+
+	data.Signature = types.StringValue(res.Signature)
+	data.Id = types.StringValue(res.Name)
+	if data.Name.IsNull() || data.Name.IsUnknown() || data.Name.ValueString() == "" {
+		data.Name = types.StringValue(res.Name)
+	}
+	if res.Enabled != nil {
+		data.Enabled = types.BoolValue(*res.Enabled)
+	} else {
+		data.Enabled = types.BoolValue(true)
+	}
+	if res.Description != "" {
+		data.Description = types.StringValue(res.Description)
+	} else if data.Description.IsNull() || data.Description.IsUnknown() {
+		data.Description = types.StringNull()
+	}
+	// The driver type lives on the resource's own type field, not inside
+	// config.profile.type as consumed by MapClientToState.
+	data.Type = types.StringValue(res.Type)
+
+	if err := r.MapClientToState(ctx, res.Name, &res.Config, &data); err != nil {
+		resp.Diagnostics.AddError("Error mapping client to state", err.Error())
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
 }
 
 func (r *DeviceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

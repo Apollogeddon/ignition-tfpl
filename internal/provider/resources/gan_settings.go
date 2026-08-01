@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -52,6 +54,9 @@ func (r *GanGeneralSettingsResource) Schema(ctx context.Context, req resource.Sc
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "Internal name for the resource (fixed to 'gateway-network-settings').",
@@ -114,6 +119,9 @@ func (r *GanGeneralSettingsResource) Schema(ctx context.Context, req resource.Sc
 				Default:  float64default.StaticFloat64(24),
 			},
 			"signature": schema.StringAttribute{
+				// No UseStateForUnknown here: unlike id, the signature
+				// genuinely changes on every real update, so the plan must
+				// leave it unknown rather than assume it matches prior state.
 				Computed: true,
 			},
 		},
@@ -140,7 +148,17 @@ func (r *GanGeneralSettingsResource) Configure(ctx context.Context, req resource
 		Handler:      r,
 		Module:       "ignition",
 		ResourceType: "gateway-network-settings",
-		CreateFunc:   c.UpdateGanGeneralSettings,
+		// This is a singleton that already exists on the gateway, so "create"
+		// really means "update the existing settings" — the gateway requires
+		// the current signature on every update, so fetch it first.
+		CreateFunc: func(ctx context.Context, res client.ResourceResponse[client.GanGeneralSettingsConfig]) (*client.ResourceResponse[client.GanGeneralSettingsConfig], error) {
+			current, err := c.GetGanGeneralSettings(ctx)
+			if err != nil {
+				return nil, err
+			}
+			res.Signature = current.Signature
+			return c.UpdateGanGeneralSettings(ctx, res)
+		},
 		GetFunc: func(ctx context.Context, _ string) (*client.ResourceResponse[client.GanGeneralSettingsConfig], error) {
 			return c.GetGanGeneralSettings(ctx)
 		},
