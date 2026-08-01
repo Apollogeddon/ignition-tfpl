@@ -1,8 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -413,12 +415,18 @@ func TestClient_ModuleResourceOperations(t *testing.T) {
 }
 
 func TestClient_RedundancyOperations(t *testing.T) {
+	var capturedMethod string
+	var capturedBody []byte
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			_ = json.NewEncoder(w).Encode(RedundancyConfig{Role: "Independent"})
-		} else {
-			w.WriteHeader(http.StatusOK)
+			// The real gateway uses "masterRecoveryMode", not "recoveryMode".
+			_, _ = w.Write([]byte(`{"role":"Independent","masterRecoveryMode":"Automatic"}`))
+			return
 		}
+		capturedMethod = r.Method
+		capturedBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
@@ -426,15 +434,24 @@ func TestClient_RedundancyOperations(t *testing.T) {
 
 	config, err := c.GetRedundancyConfig(context.Background())
 	if err != nil {
-		t.Errorf("GetRedundancyConfig failed: %v", err)
+		t.Fatalf("GetRedundancyConfig failed: %v", err)
 	}
 	if config.Role != "Independent" {
 		t.Errorf("Expected Role Independent, got %s", config.Role)
 	}
+	if config.RecoveryMode != "Automatic" {
+		t.Errorf("expected RecoveryMode to be unmarshaled from masterRecoveryMode, got %q", config.RecoveryMode)
+	}
 
-	err = c.UpdateRedundancyConfig(context.Background(), *config)
-	if err != nil {
-		t.Errorf("UpdateRedundancyConfig failed: %v", err)
+	config.RecoveryMode = "Manual"
+	if err := c.UpdateRedundancyConfig(context.Background(), *config); err != nil {
+		t.Fatalf("UpdateRedundancyConfig failed: %v", err)
+	}
+	if capturedMethod != http.MethodPut {
+		t.Errorf("expected UpdateRedundancyConfig to use PUT (the endpoint doesn't support POST), got %s", capturedMethod)
+	}
+	if !bytes.Contains(capturedBody, []byte(`"masterRecoveryMode":"Manual"`)) {
+		t.Errorf("expected request body to use the masterRecoveryMode key, got: %s", capturedBody)
 	}
 }
 
@@ -634,60 +651,117 @@ func TestClient_GanOutgoingOperations(t *testing.T) {
 }
 
 func TestClient_GanGeneralSettingsOperations(t *testing.T) {
+	type call struct{ method, path string }
+	var calls []call
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := ResourceResponse[GanGeneralSettingsConfig]{
-			Name:   "settings",
-			Config: GanGeneralSettingsConfig{AllowIncoming: true},
+		calls = append(calls, call{r.Method, r.URL.Path})
+		if r.Method == http.MethodGet {
+			// Singleton responses never include a "name" field.
+			_, _ = w.Write([]byte(`{"signature":"sig-settings","config":{"allowIncoming":true}}`))
+			return
 		}
-		_ = json.NewEncoder(w).Encode(response)
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	item := ResourceResponse[GanGeneralSettingsConfig]{Name: "settings"}
 
-	if _, err := c.UpdateGanGeneralSettings(context.Background(), item); err != nil {
-		t.Errorf("UpdateGanGeneralSettings failed: %v", err)
+	got, err := c.GetGanGeneralSettings(context.Background())
+	if err != nil {
+		t.Fatalf("GetGanGeneralSettings failed: %v", err)
 	}
-	if _, err := c.GetGanGeneralSettings(context.Background()); err != nil {
-		t.Errorf("GetGanGeneralSettings failed: %v", err)
+	if len(calls) != 1 || calls[0].path != "/data/api/v1/resources/singleton/ignition/gateway-network-settings" {
+		t.Errorf("expected GetGanGeneralSettings to use the singleton path, got %+v", calls)
+	}
+	if got.Name != "gateway-network-settings" {
+		t.Errorf("expected Name to be filled in despite the response omitting it, got %q", got.Name)
+	}
+
+	calls = nil
+	item := ResourceResponse[GanGeneralSettingsConfig]{Name: "gateway-network-settings", Signature: "sig-settings"}
+	updated, err := c.UpdateGanGeneralSettings(context.Background(), item)
+	if err != nil {
+		t.Fatalf("UpdateGanGeneralSettings failed: %v", err)
+	}
+	if len(calls) != 2 {
+		t.Fatalf("expected UpdateGanGeneralSettings to PUT then re-fetch via singleton GET, got %+v", calls)
+	}
+	if calls[0].method != http.MethodPut || calls[0].path != "/data/api/v1/resources/ignition/gateway-network-settings" {
+		t.Errorf("expected first call to be PUT to the resource path, got %+v", calls[0])
+	}
+	if calls[1].method != http.MethodGet || calls[1].path != "/data/api/v1/resources/singleton/ignition/gateway-network-settings" {
+		t.Errorf("expected follow-up call to be a singleton GET (find-by-name doesn't exist for singletons), got %+v", calls[1])
+	}
+	if updated.Name != "gateway-network-settings" {
+		t.Errorf("expected updated Name to be filled in, got %q", updated.Name)
 	}
 }
 
 func TestClient_DeviceOperations(t *testing.T) {
+	var capturedCreateBody, capturedUpdateBody []byte
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			response := ResourceResponse[DeviceConfig]{
-				Name:      "test-device",
-				Signature: "sig-device",
-				Config:    DeviceConfig{"type": "Simulator"},
-			}
-			_ = json.NewEncoder(w).Encode(response)
+			// The driver flavor lives in config.profile.type, distinct from
+			// the outer generic resource-type string.
+			_, _ = w.Write([]byte(`{
+				"type": "com.inductiveautomation.opcua/device",
+				"name": "test-device",
+				"signature": "sig-device",
+				"config": {
+					"profile": {"type": "ProgrammableSimulatorDevice"},
+					"settings": {"timeIntervalRate": 1000}
+				}
+			}`))
 			return
 		}
-		response := []ResourceResponse[DeviceConfig]{
-			{
-				Name:      "test-device",
-				Signature: "sig-device",
-				Config:    DeviceConfig{"type": "Simulator"},
-			},
+
+		body, _ := io.ReadAll(r.Body)
+		if r.Method == http.MethodPost {
+			capturedCreateBody = body
+		} else {
+			capturedUpdateBody = body
 		}
-		_ = json.NewEncoder(w).Encode(response)
+		_, _ = w.Write([]byte(`{"success":true,"changes":[{"name":"test-device","newSignature":"sig-device"}]}`))
 	}))
 	defer server.Close()
 
 	c, _ := NewClient(server.URL, "token", false)
-	item := ResourceResponse[DeviceConfig]{Name: "test-device"}
+	item := ResourceResponse[DeviceConfig]{
+		Name:   "test-device",
+		Type:   "ProgrammableSimulatorDevice",
+		Config: DeviceConfig{"timeIntervalRate": float64(1000)},
+	}
 
 	if _, err := c.CreateDevice(context.Background(), item); err != nil {
-		t.Errorf("CreateDevice failed: %v", err)
+		t.Fatalf("CreateDevice failed: %v", err)
 	}
+	if !bytes.Contains(capturedCreateBody, []byte(`"profile":{"type":"ProgrammableSimulatorDevice"}`)) {
+		t.Errorf("expected CreateDevice to wrap the driver type under config.profile.type, got: %s", capturedCreateBody)
+	}
+	if !bytes.Contains(capturedCreateBody, []byte(`"settings":{"timeIntervalRate":1000}`)) {
+		t.Errorf("expected CreateDevice to nest params under config.settings, got: %s", capturedCreateBody)
+	}
+
 	if _, err := c.UpdateDevice(context.Background(), item); err != nil {
-		t.Errorf("UpdateDevice failed: %v", err)
+		t.Fatalf("UpdateDevice failed: %v", err)
 	}
-	if _, err := c.GetDevice(context.Background(), "test-device"); err != nil {
-		t.Errorf("GetDevice failed: %v", err)
+	if !bytes.Contains(capturedUpdateBody, []byte(`"profile":{"type":"ProgrammableSimulatorDevice"}`)) {
+		t.Errorf("expected UpdateDevice to wrap the driver type under config.profile.type, got: %s", capturedUpdateBody)
 	}
+
+	got, err := c.GetDevice(context.Background(), "test-device")
+	if err != nil {
+		t.Fatalf("GetDevice failed: %v", err)
+	}
+	if got.Type != "ProgrammableSimulatorDevice" {
+		t.Errorf("expected Type to be extracted from config.profile.type (not the outer generic type), got %q", got.Type)
+	}
+	if _, ok := got.Config["timeIntervalRate"]; !ok {
+		t.Errorf("expected Config to be extracted from config.settings, got %+v", got.Config)
+	}
+
 	if err := c.DeleteDevice(context.Background(), "test-device", "sig"); err != nil {
 		t.Errorf("DeleteDevice failed: %v", err)
 	}

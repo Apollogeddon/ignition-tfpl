@@ -296,7 +296,7 @@ type RedundancyConfig struct {
 	Role                string `json:"role"`
 	ActiveHistoryLevel  string `json:"activeHistoryLevel"`
 	JoinWaitTime        int    `json:"joinWaitTime"`
-	RecoveryMode        string `json:"recoveryMode"`
+	RecoveryMode        string `json:"masterRecoveryMode"`
 	AllowHistoryCleanup bool   `json:"allowHistoryCleanup"`
 	GatewayNetworkSetup *struct {
 		Host               string  `json:"host,omitempty"`
@@ -325,3 +325,17 @@ type GanGeneralSettingsConfig struct {
 }
 
 type DeviceConfig map[string]any
+
+// DeviceWireProfile and DeviceWireConfig describe the actual on-the-wire
+// shape the gateway expects for device resources: driver-specific settings
+// nested under a profile/settings envelope, keyed by driver type. DeviceConfig
+// itself stays a flat map since that's what the rest of the provider (and its
+// tests) work with; the client layer wraps/unwraps at the HTTP boundary.
+type DeviceWireProfile struct {
+	Type string `json:"type"`
+}
+
+type DeviceWireConfig struct {
+	Profile  DeviceWireProfile `json:"profile"`
+	Settings DeviceConfig      `json:"settings"`
+}
