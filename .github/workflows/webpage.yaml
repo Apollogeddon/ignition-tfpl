@@ -40,6 +40,11 @@ jobs:
           go-version: 'stable'
           cache: true
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
       - name: Generate Docs
         run: sh .github/scripts/ci/generate-docs.sh
 
