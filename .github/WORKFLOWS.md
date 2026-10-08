@@ -4,13 +4,17 @@ This repository uses GitHub Actions to automate testing, quality assurance, docu
 
 ## 🏗️ Orchestration: The Index Workflow
 
-The [`.index.yaml`](./workflows/.index.yaml) workflow runs on pull requests and pushes to `main` that change the provider's code, its tooling or these workflows. It runs the checks in this order:
+The [`.index.yaml`](./workflows/.index.yaml) workflow runs on every pull request and on pushes to `main` that change the provider's code, its tooling or the workflows that test and release it. It runs the checks in this order:
 
-1. **Testing & Quality**: forgego's reusable `testing.yml` and Trivy, in parallel.
-2. **Ignition Acceptance Tests**: Launches a real Ignition Gateway via Docker Compose and runs Terraform acceptance tests against it.
-3. **Release**: Only on `main`, after all previous checks pass.
+1. **Changes**: On a pull request, works out whether the provider, its tooling or those workflows changed, and whether any shell script changed.
+2. **shellcheck**: Lints every shell script, when a script changed.
+3. **Testing & Quality**: forgego's reusable `testing.yml` and Trivy, in parallel, when the provider changed.
+4. **Ignition Acceptance Tests**: Launches a real Ignition Gateway via Docker Compose and runs Terraform acceptance tests against it.
+5. **Release**: Only on `main`, after all previous checks pass.
+6. **Webpage**: On a pull request, the documentation site's checks and build ([below](#-documentation)).
+7. **Auto-merge**: Merges a Dependabot pull request through [forgejs](https://github.com/apollogeddon/forgejs)'s `merge.yml`, once every job above has passed or been skipped.
 
-A new push to a pull request cancels its previous run. The documentation site has its own workflow (below), which runs on every push and pull request.
+A new push to a pull request cancels its previous run. On `main`, the documentation site runs on its own push trigger.
 
 ---
 
