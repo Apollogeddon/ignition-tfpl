@@ -18,7 +18,7 @@
 
 ## 🚀 Overview
 
-The **Ignition Terraform Provider** allows you to manage Inductive Automation's Ignition Perspective 8.3 infrastructure using HashiCorp Terraform. Configure Projects, Database Connections, Tag Providers, and Enterprise settings (Redundancy, GAN) alongside your cloud infrastructure.
+The **Ignition Terraform Provider** allows you to manage Inductive Automation's Ignition Perspective 8.3 infrastructure with [OpenTofu](https://opentofu.org/) or Terraform. Configure Projects, Database Connections, Tag Providers, and Enterprise settings (Redundancy, GAN) alongside your cloud infrastructure.
 
 ## ✨ Features
 
@@ -31,12 +31,12 @@ The **Ignition Terraform Provider** allows you to manage Inductive Automation's 
 
 ### Prerequisites
 
-- **Terraform** (v1.0+)
+- **OpenTofu** (v1.6+) or **Terraform** (v1.0+). The provider is tested with OpenTofu.
 - **Ignition Gateway** (v8.3+)
 
 ### Configuration
 
-Add the provider to your Terraform configuration:
+Add the provider to your configuration:
 
 ```hcl
 terraform {
@@ -69,7 +69,7 @@ provider "ignition" {
 resource "ignition_project" "example" {
   name        = "MyEnterpriseProject"
   title       = "Enterprise Dashboard"
-  description = "Managed via Terraform"
+  description = "Managed via OpenTofu"
   enabled     = true
 }
 ```
@@ -89,7 +89,7 @@ See the [Documentation](https://apollogeddon.github.io/ignition-tfpl) for the fu
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-Run `npm ci` once per clone to install the commit hook: commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses for versioning. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`. To preview the reference docs locally, generate them with `.github/scripts/ci/generate-docs.sh` and `migrate-docs.sh`; git ignores the output.
+Run `task hooks` once per clone to install the git hooks: commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses for versioning. `task test` runs the unit tests and `task test:acc` the acceptance tests against a gateway started with `docker compose up`; both download the pinned OpenTofu release into `.bin/` (`.github/scripts/install-tofu.sh`) and run against it. To preview the reference docs locally, generate them with `.github/scripts/ci/generate-docs.sh` and `migrate-docs.sh`; git ignores the output.
 
 ## 📄 License
 
