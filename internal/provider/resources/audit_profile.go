@@ -17,8 +17,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &AuditProfileResource{}
-var _ resource.ResourceWithImportState = &AuditProfileResource{}
+var (
+	_ resource.Resource                = &AuditProfileResource{}
+	_ resource.ResourceWithImportState = &AuditProfileResource{}
+)
 
 func NewAuditProfileResource() resource.Resource {
 	return &AuditProfileResource{}

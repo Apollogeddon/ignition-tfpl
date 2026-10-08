@@ -17,8 +17,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &AlarmJournalResource{}
-var _ resource.ResourceWithImportState = &AlarmJournalResource{}
+var (
+	_ resource.Resource                = &AlarmJournalResource{}
+	_ resource.ResourceWithImportState = &AlarmJournalResource{}
+)
 
 func NewAlarmJournalResource() resource.Resource {
 	return &AlarmJournalResource{}

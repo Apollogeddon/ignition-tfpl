@@ -4,33 +4,30 @@ This repository uses GitHub Actions to automate testing, quality assurance, docu
 
 ## 🏗️ Orchestration: The Index Workflow
 
-The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point for changes to the `main` branch. It orchestrates the execution of other workflows in a specific order:
+The [`.index.yaml`](./workflows/.index.yaml) workflow runs on pull requests and pushes to `main` that change the provider's code, its tooling or these workflows. It runs the checks in this order:
 
-1. **Testing & Quality**: Runs the unit testing and quality suites in parallel.
+1. **Testing & Quality**: forgego's reusable `testing.yml` and Trivy, in parallel.
 2. **Ignition Acceptance Tests**: Launches a real Ignition Gateway via Docker Compose and runs Terraform acceptance tests against it.
-3. **Release**: Triggered only after all previous checks pass.
+3. **Release**: Only on `main`, after all previous checks pass.
 
-The documentation site has its own workflow (below), which runs on every push and pull request.
+A new push to a pull request cancels its previous run. The documentation site has its own workflow (below), which runs on every push and pull request.
 
 ---
 
-## 🔍 Quality Assurance
+## 🔍 Quality and Testing
 
-The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analysis and security scanning:
+The provider's tooling comes from [forgego](https://github.com/apollogeddon/forgego): each tool is pinned in its own module under `.forgego/`, and `Taskfile.yml` runs them (`task lint`, `task test`, `task build`). Run `task hooks` once to install the git hooks: they format staged Go files and check that forgego's files are current before a commit, lint before a push, and check commit messages against Conventional Commits.
 
-- **GolangCI-Lint**: Runs a suite of Go linters to ensure code consistency and catch common errors.
-- **Trivy**: Scans the repository filesystem for known vulnerabilities and configuration issues.
-- **Govulncheck**: Scans the Go dependencies for known vulnerabilities using the Go vulnerability database.
+forgego's [`testing.yml`](https://github.com/apollogeddon/forgego/blob/main/.github/workflows/testing.yml) runs:
 
-## 🧪 Testing
+- **Quality**: `go mod tidy -diff`, the golangci-lint format check and lint (forgego's base config merged with `.golangci.local.yml` into `.golangci.yml`), a check that forgego's files are current, govulncheck and OSV-Scanner.
+- **Unit tests**: `task test`, with the race detector and coverage.
+- **Build**: `task build`.
+- **Patch**: on `main`, upgrades modules that govulncheck reports as vulnerable and commits the fix.
 
-The provider uses a two-tier testing strategy:
+**Trivy** scans the repository for known vulnerabilities and fails on high or critical ones.
 
-### Unit Testing
-
-The [`testing.yaml`](./workflows/testing.yaml) workflow runs standard Go unit tests with the race detector enabled to ensure internal logic is sound and thread-safe.
-
-### Acceptance Testing
+## 🧪 Acceptance Testing
 
 The [`ignition.yaml`](./workflows/ignition.yaml) workflow performs "real-world" validation:
 

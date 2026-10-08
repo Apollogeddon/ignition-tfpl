@@ -20,8 +20,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &IdentityProviderResource{}
-var _ resource.ResourceWithImportState = &IdentityProviderResource{}
+var (
+	_ resource.Resource                = &IdentityProviderResource{}
+	_ resource.ResourceWithImportState = &IdentityProviderResource{}
+)
 
 func NewIdentityProviderResource() resource.Resource {
 	return &IdentityProviderResource{}
@@ -285,7 +287,8 @@ func defaultIdentityProviderProfile(idpType string) client.IdentityProviderProfi
 }
 
 func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *IdentityProviderResourceModel) (client.IdentityProviderConfig, error) {
-	if model.Type.ValueString() == "internal" {
+	switch model.Type.ValueString() {
+	case "internal":
 		internalConfig := client.IdentityProviderInternalConfig{
 			UserSource:               model.UserSource.ValueString(),
 			SessionInactivityTimeout: model.SessionInactivityTimeout.ValueFloat64(),
@@ -302,7 +305,7 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 			Profile:  defaultIdentityProviderProfile("internal"),
 			Settings: internalConfig,
 		}, nil
-	} else if model.Type.ValueString() == "oidc" {
+	case "oidc":
 		oidcConfig := client.IdentityProviderOidcConfig{
 			ClientId:                   model.ClientId.ValueString(),
 			ProviderId:                 model.ProviderId.ValueString(),
@@ -326,7 +329,7 @@ func (r *IdentityProviderResource) MapPlanToClient(ctx context.Context, model *I
 			Profile:  defaultIdentityProviderProfile("oidc"),
 			Settings: oidcConfig,
 		}, nil
-	} else if model.Type.ValueString() == "saml" {
+	case "saml":
 		samlConfig := client.IdentityProviderSamlConfig{
 			IdpEntityId:                    model.IdpEntityId.ValueString(),
 			SpEntityId:                     model.SpEntityId.ValueString(),

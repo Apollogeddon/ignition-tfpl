@@ -96,7 +96,8 @@ func NewClient(host, token string, allowInsecureTLS bool) (*Client, error) {
 
 	if allowInsecureTLS {
 		rc.HTTPClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			// allow_insecure_tls is an explicit opt-in, for gateways with a self-signed certificate
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // see above
 		}
 	}
 
@@ -255,16 +256,19 @@ func getR[T any](ctx context.Context, c *Client, m, t, n string) (*ResourceRespo
 func (c *Client) GetDatabaseConnection(ctx context.Context, n string) (*ResourceResponse[DatabaseConfig], error) {
 	return getR[DatabaseConfig](ctx, c, "ignition", "database-connection", n)
 }
+
 func (c *Client) CreateDatabaseConnection(ctx context.Context, i ResourceResponse[DatabaseConfig]) (*ResourceResponse[DatabaseConfig], error) {
 	var r ResourceResponse[DatabaseConfig]
 	err := c.CreateResource(ctx, "database-connection", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateDatabaseConnection(ctx context.Context, i ResourceResponse[DatabaseConfig]) (*ResourceResponse[DatabaseConfig], error) {
 	var r ResourceResponse[DatabaseConfig]
 	err := c.UpdateResource(ctx, "database-connection", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteDatabaseConnection(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "database-connection", n, s)
 }
@@ -272,16 +276,19 @@ func (c *Client) DeleteDatabaseConnection(ctx context.Context, n, s string) erro
 func (c *Client) GetUserSource(ctx context.Context, n string) (*ResourceResponse[UserSourceConfig], error) {
 	return getR[UserSourceConfig](ctx, c, "ignition", "user-source", n)
 }
+
 func (c *Client) CreateUserSource(ctx context.Context, i ResourceResponse[UserSourceConfig]) (*ResourceResponse[UserSourceConfig], error) {
 	var r ResourceResponse[UserSourceConfig]
 	err := c.CreateResource(ctx, "user-source", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateUserSource(ctx context.Context, i ResourceResponse[UserSourceConfig]) (*ResourceResponse[UserSourceConfig], error) {
 	var r ResourceResponse[UserSourceConfig]
 	err := c.UpdateResource(ctx, "user-source", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteUserSource(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "user-source", n, s)
 }
@@ -289,16 +296,19 @@ func (c *Client) DeleteUserSource(ctx context.Context, n, s string) error {
 func (c *Client) GetTagProvider(ctx context.Context, n string) (*ResourceResponse[TagProviderConfig], error) {
 	return getR[TagProviderConfig](ctx, c, "ignition", "tag-provider", n)
 }
+
 func (c *Client) CreateTagProvider(ctx context.Context, i ResourceResponse[TagProviderConfig]) (*ResourceResponse[TagProviderConfig], error) {
 	var r ResourceResponse[TagProviderConfig]
 	err := c.CreateResource(ctx, "tag-provider", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateTagProvider(ctx context.Context, i ResourceResponse[TagProviderConfig]) (*ResourceResponse[TagProviderConfig], error) {
 	var r ResourceResponse[TagProviderConfig]
 	err := c.UpdateResource(ctx, "tag-provider", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteTagProvider(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "tag-provider", n, s)
 }
@@ -306,16 +316,19 @@ func (c *Client) DeleteTagProvider(ctx context.Context, n, s string) error {
 func (c *Client) GetAuditProfile(ctx context.Context, n string) (*ResourceResponse[AuditProfileConfig], error) {
 	return getR[AuditProfileConfig](ctx, c, "ignition", "audit-profile", n)
 }
+
 func (c *Client) CreateAuditProfile(ctx context.Context, i ResourceResponse[AuditProfileConfig]) (*ResourceResponse[AuditProfileConfig], error) {
 	var r ResourceResponse[AuditProfileConfig]
 	err := c.CreateResource(ctx, "audit-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateAuditProfile(ctx context.Context, i ResourceResponse[AuditProfileConfig]) (*ResourceResponse[AuditProfileConfig], error) {
 	var r ResourceResponse[AuditProfileConfig]
 	err := c.UpdateResource(ctx, "audit-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteAuditProfile(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "audit-profile", n, s)
 }
@@ -323,16 +336,19 @@ func (c *Client) DeleteAuditProfile(ctx context.Context, n, s string) error {
 func (c *Client) GetAlarmNotificationProfile(ctx context.Context, n string) (*ResourceResponse[AlarmNotificationProfileConfig], error) {
 	return getR[AlarmNotificationProfileConfig](ctx, c, "com.inductiveautomation.alarm-notification", "alarm-notification-profile", n)
 }
+
 func (c *Client) CreateAlarmNotificationProfile(ctx context.Context, i ResourceResponse[AlarmNotificationProfileConfig]) (*ResourceResponse[AlarmNotificationProfileConfig], error) {
 	var r ResourceResponse[AlarmNotificationProfileConfig]
 	err := c.CreateResourceWithModule(ctx, "com.inductiveautomation.alarm-notification", "alarm-notification-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateAlarmNotificationProfile(ctx context.Context, i ResourceResponse[AlarmNotificationProfileConfig]) (*ResourceResponse[AlarmNotificationProfileConfig], error) {
 	var r ResourceResponse[AlarmNotificationProfileConfig]
 	err := c.UpdateResourceWithModule(ctx, "com.inductiveautomation.alarm-notification", "alarm-notification-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteAlarmNotificationProfile(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "com.inductiveautomation.alarm-notification", "alarm-notification-profile", n, s)
 }
@@ -340,16 +356,19 @@ func (c *Client) DeleteAlarmNotificationProfile(ctx context.Context, n, s string
 func (c *Client) GetOpcUaConnection(ctx context.Context, n string) (*ResourceResponse[OpcUaConnectionConfig], error) {
 	return getR[OpcUaConnectionConfig](ctx, c, "ignition", "opc-connection", n)
 }
+
 func (c *Client) CreateOpcUaConnection(ctx context.Context, i ResourceResponse[OpcUaConnectionConfig]) (*ResourceResponse[OpcUaConnectionConfig], error) {
 	var r ResourceResponse[OpcUaConnectionConfig]
 	err := c.CreateResourceWithModule(ctx, "ignition", "opc-connection", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateOpcUaConnection(ctx context.Context, i ResourceResponse[OpcUaConnectionConfig]) (*ResourceResponse[OpcUaConnectionConfig], error) {
 	var r ResourceResponse[OpcUaConnectionConfig]
 	err := c.UpdateResourceWithModule(ctx, "ignition", "opc-connection", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteOpcUaConnection(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "ignition", "opc-connection", n, s)
 }
@@ -357,16 +376,19 @@ func (c *Client) DeleteOpcUaConnection(ctx context.Context, n, s string) error {
 func (c *Client) GetAlarmJournal(ctx context.Context, n string) (*ResourceResponse[AlarmJournalConfig], error) {
 	return getR[AlarmJournalConfig](ctx, c, "ignition", "alarm-journal", n)
 }
+
 func (c *Client) CreateAlarmJournal(ctx context.Context, i ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error) {
 	var r ResourceResponse[AlarmJournalConfig]
 	err := c.CreateResourceWithModule(ctx, "ignition", "alarm-journal", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateAlarmJournal(ctx context.Context, i ResourceResponse[AlarmJournalConfig]) (*ResourceResponse[AlarmJournalConfig], error) {
 	var r ResourceResponse[AlarmJournalConfig]
 	err := c.UpdateResourceWithModule(ctx, "ignition", "alarm-journal", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteAlarmJournal(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "ignition", "alarm-journal", n, s)
 }
@@ -374,16 +396,19 @@ func (c *Client) DeleteAlarmJournal(ctx context.Context, n, s string) error {
 func (c *Client) GetSMTPProfile(ctx context.Context, n string) (*ResourceResponse[SMTPProfileConfig], error) {
 	return getR[SMTPProfileConfig](ctx, c, "ignition", "email-profile", n)
 }
+
 func (c *Client) CreateSMTPProfile(ctx context.Context, i ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
 	var r ResourceResponse[SMTPProfileConfig]
 	err := c.CreateResource(ctx, "email-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateSMTPProfile(ctx context.Context, i ResourceResponse[SMTPProfileConfig]) (*ResourceResponse[SMTPProfileConfig], error) {
 	var r ResourceResponse[SMTPProfileConfig]
 	err := c.UpdateResource(ctx, "email-profile", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteSMTPProfile(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "email-profile", n, s)
 }
@@ -391,16 +416,19 @@ func (c *Client) DeleteSMTPProfile(ctx context.Context, n, s string) error {
 func (c *Client) GetStoreAndForward(ctx context.Context, n string) (*ResourceResponse[StoreAndForwardConfig], error) {
 	return getR[StoreAndForwardConfig](ctx, c, "ignition", "store-and-forward-engine", n)
 }
+
 func (c *Client) CreateStoreAndForward(ctx context.Context, i ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
 	var r ResourceResponse[StoreAndForwardConfig]
 	err := c.CreateResource(ctx, "store-and-forward-engine", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateStoreAndForward(ctx context.Context, i ResourceResponse[StoreAndForwardConfig]) (*ResourceResponse[StoreAndForwardConfig], error) {
 	var r ResourceResponse[StoreAndForwardConfig]
 	err := c.UpdateResource(ctx, "store-and-forward-engine", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteStoreAndForward(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "store-and-forward-engine", n, s)
 }
@@ -408,16 +436,19 @@ func (c *Client) DeleteStoreAndForward(ctx context.Context, n, s string) error {
 func (c *Client) GetIdentityProvider(ctx context.Context, n string) (*ResourceResponse[IdentityProviderConfig], error) {
 	return getR[IdentityProviderConfig](ctx, c, "ignition", "identity-provider", n)
 }
+
 func (c *Client) CreateIdentityProvider(ctx context.Context, i ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
 	var r ResourceResponse[IdentityProviderConfig]
 	err := c.CreateResource(ctx, "identity-provider", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateIdentityProvider(ctx context.Context, i ResourceResponse[IdentityProviderConfig]) (*ResourceResponse[IdentityProviderConfig], error) {
 	var r ResourceResponse[IdentityProviderConfig]
 	err := c.UpdateResource(ctx, "identity-provider", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteIdentityProvider(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "identity-provider", n, s)
 }
@@ -425,16 +456,19 @@ func (c *Client) DeleteIdentityProvider(ctx context.Context, n, s string) error 
 func (c *Client) GetGanOutgoing(ctx context.Context, n string) (*ResourceResponse[GanOutgoingConfig], error) {
 	return getR[GanOutgoingConfig](ctx, c, "ignition", "gateway-network-outgoing", n)
 }
+
 func (c *Client) CreateGanOutgoing(ctx context.Context, i ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
 	var r ResourceResponse[GanOutgoingConfig]
 	err := c.CreateResource(ctx, "gateway-network-outgoing", i, &r)
 	return &r, err
 }
+
 func (c *Client) UpdateGanOutgoing(ctx context.Context, i ResourceResponse[GanOutgoingConfig]) (*ResourceResponse[GanOutgoingConfig], error) {
 	var r ResourceResponse[GanOutgoingConfig]
 	err := c.UpdateResource(ctx, "gateway-network-outgoing", i, &r)
 	return &r, err
 }
+
 func (c *Client) DeleteGanOutgoing(ctx context.Context, n, s string) error {
 	return c.DeleteResource(ctx, "gateway-network-outgoing", n, s)
 }
@@ -447,6 +481,7 @@ func (c *Client) GetRedundancyConfig(ctx context.Context) (*RedundancyConfig, er
 	var config RedundancyConfig
 	return &config, json.Unmarshal(body, &config)
 }
+
 func (c *Client) UpdateRedundancyConfig(ctx context.Context, config RedundancyConfig) error {
 	rb, err := json.Marshal(config)
 	if err != nil {
@@ -470,6 +505,7 @@ func (c *Client) GetGanGeneralSettings(ctx context.Context) (*ResourceResponse[G
 	r.Name = ganGeneralSettingsName
 	return &r, nil
 }
+
 func (c *Client) UpdateGanGeneralSettings(ctx context.Context, i ResourceResponse[GanGeneralSettingsConfig]) (*ResourceResponse[GanGeneralSettingsConfig], error) {
 	var r ResourceResponse[GanGeneralSettingsConfig]
 	err := c.updateSingleton(ctx, "ignition", ganGeneralSettingsName, i, &r)
@@ -520,16 +556,19 @@ func (c *Client) GetDevice(ctx context.Context, n string) (*ResourceResponse[Dev
 	}
 	return deviceFromWire(*r), nil
 }
+
 func (c *Client) CreateDevice(ctx context.Context, i ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
 	var r ResourceResponse[DeviceWireConfig]
 	err := c.CreateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", deviceToWire(i), &r)
 	return deviceFromWire(r), err
 }
+
 func (c *Client) UpdateDevice(ctx context.Context, i ResourceResponse[DeviceConfig]) (*ResourceResponse[DeviceConfig], error) {
 	var r ResourceResponse[DeviceWireConfig]
 	err := c.UpdateResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", deviceToWire(i), &r)
 	return deviceFromWire(r), err
 }
+
 func (c *Client) DeleteDevice(ctx context.Context, n, s string) error {
 	return c.DeleteResourceWithModule(ctx, "com.inductiveautomation.opcua", "device", n, s)
 }

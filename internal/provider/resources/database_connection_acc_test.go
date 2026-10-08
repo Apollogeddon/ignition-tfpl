@@ -47,6 +47,7 @@ func TestAccDatabaseConnectionResource(t *testing.T) {
 		},
 	})
 }
+
 func testAccDatabaseConnectionResourceConfig(name, dbType, translator, url string) string {
 	return fmt.Sprintf(`
 provider "ignition" {}
