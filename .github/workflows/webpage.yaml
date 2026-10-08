@@ -80,12 +80,6 @@ jobs:
           go-version: "stable"
           cache: true
 
-      # tfplugindocs can't download Terraform itself: its built-in HashiCorp signing key has expired
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_wrapper: false
-
       - name: Generate docs
         run: |
           bash .github/scripts/ci/generate-docs.sh

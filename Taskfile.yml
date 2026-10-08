@@ -46,9 +46,18 @@ tasks:
     cmds:
       - go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
   test:
-    desc: Run the tests with coverage and a JUnit report
+    desc: Run the tests with coverage and a JUnit report, against OpenTofu
+    env:
+      TF_ACC_PROVIDER_HOST: registry.opentofu.org
     cmds:
-      - '{{.GOTESTSUM}} --junitfile junit-report.xml -- -race -coverprofile=coverage.out -covermode=atomic ./...'
+      - TF_ACC_TERRAFORM_PATH="$(.github/scripts/install-tofu.sh)" {{.GOTESTSUM}} --junitfile junit-report.xml -- -race -coverprofile=coverage.out -covermode=atomic ./...
+  test:acc:
+    desc: Run the acceptance tests against a running gateway (docker compose up), with OpenTofu
+    env:
+      TF_ACC: "1"
+      TF_ACC_PROVIDER_HOST: registry.opentofu.org
+    cmds:
+      - TF_ACC_TERRAFORM_PATH="$(.github/scripts/install-tofu.sh)" go test -v ./internal/provider/...
   commit-msg:
     desc: Check a commit message file against Conventional Commits
     cmds:
