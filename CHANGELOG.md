@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.0.0...v1.1.0) (2026-10-08)
+
+
+### Features
+
+* Release the provider in the Terraform Registry's format ([544bd83](https://github.com/Apollogeddon/ignition-tfpl/commit/544bd83aa4a7aaf5dc7e1045aae227eb474f9110))
+* Release the provider in the Terraform Registry's format ([bfee84b](https://github.com/Apollogeddon/ignition-tfpl/commit/bfee84bef69dbefc793f66ec5fb0e9a841b2e9ff))
+
+
+### Bug Fixes
+
+* **client:** Fix error handling, secret retries, and identity-provider REST payload ([8a670cf](https://github.com/Apollogeddon/ignition-tfpl/commit/8a670cfde69ca299bba69c857549b7a57d0a23bc))
+* **client:** Fix redundancy, gan-settings, and device REST API mismatches ([c1ea571](https://github.com/Apollogeddon/ignition-tfpl/commit/c1ea5713e52c0e25befc8fba8b3155301d67898b))
+* **deps:** Upgrade hc-install and modules with known vulnerabilities ([9376ecb](https://github.com/Apollogeddon/ignition-tfpl/commit/9376ecb20550d3d17cd7313d6e2b3e3933cd2c18))
+* **docker:** Build gwbk into gateway image so restore works on remote docker hosts ([1fa30b9](https://github.com/Apollogeddon/ignition-tfpl/commit/1fa30b928acc6ed8aa3659167c5f4d6f56b40e2c))
+* **resources:** Correct module and type sent for alarm-journal resource ([2465b98](https://github.com/Apollogeddon/ignition-tfpl/commit/2465b987b0add7947a0c09d979e4ed51f94a2785))
+* **resources:** Default opc-ua connection type to avoid sending an empty profile type ([8aa2c97](https://github.com/Apollogeddon/ignition-tfpl/commit/8aa2c9766d392edc9e9277d5c43c13ed642ee8a4))
+
 ## 1.0.0 (2026-01-26)
 
 
