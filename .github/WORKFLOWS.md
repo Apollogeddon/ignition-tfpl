@@ -26,10 +26,13 @@ The [`quality.yaml`](./workflows/quality.yaml) workflow focuses on static analys
 The provider uses a two-tier testing strategy:
 
 ### Unit Testing
+
 The [`testing.yaml`](./workflows/testing.yaml) workflow runs standard Go unit tests with the race detector enabled to ensure internal logic is sound and thread-safe.
 
 ### Acceptance Testing
+
 The [`ignition.yaml`](./workflows/ignition.yaml) workflow performs "real-world" validation:
+
 - **Environment**: Spins up an Ignition 8.3 Gateway using `docker-compose.yml`.
 - **Initialization**: Waits for the Gateway to be healthy and accessible.
 - **Execution**: Runs `go test -v ./internal/provider/...` with `TF_ACC=1` to execute the full Terraform resource lifecycle (Create, Read, Update, Delete) against the live API.
