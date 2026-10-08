@@ -3,73 +3,149 @@ title: Installation
 description: How to install and configure the Ignition Terraform Provider.
 ---
 
+This guide shows how to install the `ignition` provider from a GitHub release, connect it to an Ignition gateway, and check that it works.
+
 ## Prerequisites
 
-Before using the Ignition Terraform Provider, ensure you have the following installed:
+- OpenTofu 1.6 or later, or Terraform 1.0 or later. The provider is developed and tested with OpenTofu.
+- An Ignition gateway, version 8.3 or later. The REST API the provider uses was introduced in Ignition 8.3.0.
+- An API key for that gateway, with permission to read and change its configuration.
 
-- **Terraform** (v1.0+)
-- **Ignition Gateway** (v8.3+) (open API is only supported from 8.3.0 onwards).
+## Install the provider
 
-## Provider Configuration
+The provider is not yet published to the OpenTofu or Terraform registry, so `tofu init` and `terraform init` cannot download it from a registry. Install it from a [GitHub release](https://github.com/apollogeddon/ignition-tfpl/releases) instead. Each release contains:
 
-To use the provider, you must configure it in your Terraform files. The provider requires the location of your Ignition Gateway and an API Token for authentication.
+| File | Contents |
+| :--- | :--- |
+| `terraform-provider-ignition_<version>_<os>_<arch>.zip` | The provider binary for one platform. |
+| `terraform-provider-ignition_<version>_SHA256SUMS` | SHA-256 checksums of the zips. |
+| `terraform-provider-ignition_<version>_SHA256SUMS.sig` | A detached GPG signature of the checksums. |
+| `terraform-provider-ignition_<version>_manifest.json` | The provider manifest (plugin protocol 6.0). |
 
-### Basic Configuration
+Releases are built for Linux, macOS, Windows and FreeBSD.
 
-Add the following to your `main.tf` or `versions.tf` file:
+### Use a local filesystem mirror
+
+The zips are named in the packed layout that a [filesystem mirror](https://opentofu.org/docs/cli/config/config-file/#filesystem_mirror) expects, so you can place a zip in a mirror directory without unpacking it. On Linux and macOS, OpenTofu and Terraform search `~/.terraform.d/plugins` by default; on Windows the directory is `%APPDATA%\terraform.d\plugins`.
+
+Download the release for your platform and verify its checksum:
+
+```bash
+VERSION=1.1.0
+PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
+MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
+
+mkdir -p "$MIRROR"
+cd "$MIRROR"
+curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
+curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
+sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS"
+```
+
+On macOS, use `shasum -a 256 --check --ignore-missing` in place of `sha256sum --check --ignore-missing`.
+
+The directory path is the provider's full source address: `registry.opentofu.org/apollogeddon/ignition` matches `source = "apollogeddon/ignition"` in OpenTofu. Terraform expands the same short address to `registry.terraform.io/apollogeddon/ignition`, so use `registry.terraform.io` in the path when you use Terraform.
+
+Then declare the provider in your configuration, for example in `versions.tf`:
 
 ```hcl
 terraform {
   required_providers {
     ignition = {
       source  = "apollogeddon/ignition"
-      version = ">= 0.0.1"
+      version = "~> 1.1"
     }
   }
 }
+```
 
-provider "ignition" {
-  host  = "http://localhost:8088"
-  token = "YOUR_API_TOKEN_HERE"
-  allow_insecure_tls = false # Set to true if using self-signed certs
+Run `tofu init` (or `terraform init`). It installs the provider from the mirror and records its checksums in `.terraform.lock.hcl`.
+
+The default mirror directories apply only when your CLI configuration has no `provider_installation` block. If it has one, add the mirror to it explicitly:
+
+```hcl
+provider_installation {
+  filesystem_mirror {
+    path    = "/home/me/.terraform.d/plugins"
+    include = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
+  direct {
+    exclude = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
 }
 ```
 
-> **Note:** `allow_insecure_tls` is particularly useful when working with local Docker environments or Gateways using default self-signed certificates. Use with caution in production.
+### Use a provider you built yourself
 
-### Environment Variables
+To run a provider built from source, build it and point a `dev_overrides` block in your CLI configuration (`~/.tofurc`, or `~/.terraformrc` for Terraform) at the directory that contains the binary:
 
-For security best practices, avoid hardcoding sensitive tokens in your `.tf` files. The provider supports the following environment variables:
+```bash
+go build -o "$HOME/ignition-provider/terraform-provider-ignition" .
+```
 
-| Variable | Description |
-| :--- | :--- |
-| `IGNITION_HOST` | The base URL of the Ignition Gateway (e.g., `http://10.10.1.5:8088`). |
-| `IGNITION_TOKEN` | The API Token generated in the Ignition Gateway Config section. |
+```hcl
+provider_installation {
+  dev_overrides {
+    "registry.opentofu.org/apollogeddon/ignition" = "/home/me/ignition-provider"
+  }
+  direct {}
+}
+```
 
-When using environment variables, you can keep the provider block empty or minimal:
+For Terraform, use `registry.terraform.io/apollogeddon/ignition` as the key. With `dev_overrides`, skip `tofu init` for this provider and run `tofu plan` or `tofu apply` directly. OpenTofu prints a warning while an override is active.
+
+## Configure the provider
+
+The provider needs the gateway's base URL and an API key:
+
+```hcl
+provider "ignition" {
+  host               = "http://localhost:8088"
+  token              = var.ignition_token
+  allow_insecure_tls = false # set to true for a gateway with a self-signed certificate
+}
+```
+
+| Argument | Environment variable | Description |
+| :--- | :--- | :--- |
+| `host` | `IGNITION_HOST` | The base URL of the gateway, for example `http://10.10.1.5:8088`. |
+| `token` | `IGNITION_TOKEN` | An API key created on the gateway. Marked sensitive. |
+| `allow_insecure_tls` | | Skips TLS certificate verification. Defaults to `false`. |
+
+`allow_insecure_tls` is useful for local Docker gateways or gateways with the default self-signed certificate. Avoid it in production.
+
+Keep the API key out of your `.tf` files. When `host` or `token` is not set, the provider reads the matching environment variable, so the provider block can be empty:
 
 ```hcl
 provider "ignition" {}
 ```
 
-## Generating an API Token
+```bash
+export IGNITION_HOST="http://localhost:8088"
+export IGNITION_TOKEN="<your API key>"
+```
 
-1. Log into your Ignition Gateway Web Interface.
-2. Navigate to **Config** > **Security** > **API Tokens**.
-3. Click **Create New API Token**.
-4. Give it a description (e.g., "Terraform").
-5. Copy the generated token immediately; it will not be shown again.
+## Create an API key
 
-## Verification
+1. Sign in to the gateway web interface as an administrator.
+2. Open the API keys page in the gateway's security settings and create a key.
+3. Give the key a descriptive name, for example `opentofu`, and grant it the security levels it needs to read and change the gateway configuration.
+4. Copy the key when the gateway shows it. You cannot view it again later.
 
-To verify the installation, create a simple data source fetch (e.g., reading the default project) and run `terraform init` and `terraform plan`.
+A key without the required security levels still authenticates, but the gateway rejects every request with `403 Forbidden`.
+
+## Verify the installation
+
+Read an existing project with a data source, then run `tofu init` and `tofu plan`:
 
 ```hcl
 data "ignition_project" "example" {
   name = "MyProject"
 }
 
-output "project_desc" {
+output "project_description" {
   value = data.ignition_project.example.description
 }
 ```
+
+If the plan succeeds and shows the output, the provider can reach the gateway and the API key is valid.

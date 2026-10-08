@@ -3,55 +3,62 @@ title: Provider Capabilities
 description: Overview of supported Ignition resources and features.
 ---
 
-The Ignition Terraform Provider supports a comprehensive set of configuration resources, allowing for Infrastructure-as-Code management of an Ignition Gateway.
+This page lists the gateway configuration the `ignition` provider manages, the data sources it offers, and how to bring existing gateway configuration under management. Each resource's attributes are described in the reference section.
 
-## Supported Resources
+## Resources
 
-### Core System
-
-| Resource | Description |
-| :--- | :--- |
-| `ignition_project` | Manage Ignition Projects (Vision/Perspective/Perspective Sessions). |
-| `ignition_database_connection` | Configure connections to SQL databases (MariaDB, MySQL, PostgreSQL, MSSQL, Oracle). |
-| `ignition_tag_provider` | Manage Realtime Tag Providers (Standard). |
-| `ignition_user_source` | Configure Internal, Database, or Active Directory user sources. |
-| `ignition_identity_provider` | Setup IdPs including Internal, OpenID Connect (OIDC), and SAML 2.0. |
-
-### Connectivity & Devices
+### Core
 
 | Resource | Description |
 | :--- | :--- |
-| `ignition_opc_ua_connection` | Manage outgoing OPC UA Client connections. |
-| `ignition_device` | Configure OPC UA Devices (Modbus, Siemens, Simulators, etc.). |
-| `ignition_gan_outgoing` | Configure Gateway Network connections to other Gateways. |
+| `ignition_project` | Projects, including inheritance from a parent project and project-level defaults. |
+| `ignition_database_connection` | Database connections: MariaDB, MySQL, PostgreSQL, SQL Server and Oracle. |
+| `ignition_tag_provider` | Realtime tag providers. |
+| `ignition_user_source` | User sources, such as internal, Active Directory and database sources. |
+| `ignition_identity_provider` | Identity providers: internal, OpenID Connect (OIDC) and SAML. |
 
-### Gateway Settings
-
-| Resource | Description |
-| :--- | :--- |
-| `ignition_redundancy` | **Singleton**. Configure Master/Backup redundancy roles and sync settings. |
-| `ignition_gan_settings` | **Singleton**. General Gateway Network settings (SSL requirements, proxy hops). |
-| `ignition_smtp_profile` | Configure Email/SMTP profiles for alarm notifications and reporting. |
-
-### Alarming & Auditing
+### Connectivity
 
 | Resource | Description |
 | :--- | :--- |
-| `ignition_alarm_journal` | Configure storage for Alarm History (Database or Remote). |
-| `ignition_audit_profile` | Configure Audit Logs (Database or Internal). |
-| `ignition_alarm_notification_profile` | Configure notification pipelines (Email). |
+| `ignition_opc_ua_connection` | Outgoing OPC UA client connections. |
+| `ignition_device` | Devices, such as Modbus TCP, Siemens and simulator devices, with type-specific parameters given as JSON. |
+| `ignition_gan_outgoing` | Outgoing Gateway Network connections to other gateways. |
 
-### Data Storage
+### Gateway settings
 
 | Resource | Description |
 | :--- | :--- |
-| `ignition_store_forward` | Configure Store-and-Forward engines to buffer data during database outages. |
+| `ignition_redundancy` | Singleton. The gateway's redundancy role (independent, master or backup) and synchronization settings. |
+| `ignition_gan_settings` | Singleton. General Gateway Network settings, such as SSL requirements and the security policy for incoming connections. |
+| `ignition_smtp_profile` | SMTP profiles for email notifications and reports. |
 
-## Data Sources
+### Alarming and auditing
 
-The provider includes **Data Sources** for most of the resources listed above. This allows you to reference existing configuration on a Gateway that was not created by Terraform.
+| Resource | Description |
+| :--- | :--- |
+| `ignition_alarm_journal` | Alarm journals for alarm history, of type `DATASOURCE`, `LOCAL` or `REMOTE`. |
+| `ignition_audit_profile` | Audit profiles, of type `database`, `local`, `remote` or `edge`. |
+| `ignition_alarm_notification_profile` | Email alarm notification profiles. |
 
-**Example:**
+### Data storage
+
+| Resource | Description |
+| :--- | :--- |
+| `ignition_store_forward` | Store-and-forward engines that buffer data while a database is unavailable. |
+
+## Data sources
+
+Data sources read configuration that already exists on a gateway, including configuration that OpenTofu does not manage. They are available for:
+
+- `ignition_project`
+- `ignition_database_connection`
+- `ignition_tag_provider`
+- `ignition_user_source`
+- `ignition_smtp_profile`
+- `ignition_store_forward`
+
+For example, to create a project that inherits from an existing one:
 
 ```hcl
 data "ignition_project" "global" {
@@ -64,31 +71,27 @@ resource "ignition_project" "site_a" {
 }
 ```
 
-## Importing Existing Resources
+## Import existing configuration
 
-If you have an existing Ignition Gateway with configuration not currently managed by Terraform, you can bring those resources under control using the `terraform import` command.
-
-Most resources are imported using their **Name**.
-
-**Example:**
+To manage configuration that already exists on a gateway, import it with `tofu import` (or `terraform import`). Every named resource is imported by its name on the gateway:
 
 ```bash
-# Import an existing database connection named "ProductionDB"
-terraform import ignition_database_connection.main ProductionDB
+# Import the database connection named "ProductionDB"
+tofu import ignition_database_connection.main ProductionDB
 
-# Import an existing project named "MainDashboard"
-terraform import ignition_project.main MainDashboard
+# Import the project named "MainDashboard"
+tofu import ignition_project.main MainDashboard
 ```
 
-For **Singleton** resources (like Redundancy or GAN Settings), the identifier is usually the same as the resource type or a fixed keyword.
+The singleton resources, `ignition_redundancy` and `ignition_gan_settings`, do not support import and do not need it. Every gateway already has these settings, so creating the resource takes over the existing settings and applies your configuration to them.
 
-```bash
-# Import Gateway Network settings
-terraform import ignition_gan_settings.global gateway-network-settings
-```
+Destroying a singleton cannot remove the settings from the gateway:
 
-## Feature Highlights
+- Destroying `ignition_redundancy` resets the gateway to the independent role with default settings.
+- Destroying `ignition_gan_settings` removes the resource from state and leaves the gateway's settings as they are.
 
-- **Polymorphism**: Resources like `ignition_device` or `ignition_user_source` automatically adapt their validation and available fields based on the `type` selected.
-- **Secure Configuration**: Built-in support for Ignition's encryption endpoints ensures passwords and secrets are handled securely during transmission.
-- **Drift Detection**: Full support for `terraform plan` to detect manual changes made in the Ignition Designer or Web Config interface.
+## Behavior
+
+- **Type-specific settings**: resources such as `ignition_identity_provider`, `ignition_alarm_journal` and `ignition_audit_profile` take a `type` attribute, and the settings that apply depend on it. `ignition_device` takes its type-specific settings as a JSON `parameters` string.
+- **Secrets**: passwords and client secrets are encrypted by the gateway's encryption endpoint before the provider writes them to the gateway configuration. They are marked sensitive, so `plan` output hides them, but like any secret in your configuration they are stored in your state. Store state somewhere secure.
+- **Drift detection**: `plan` reads each resource from the gateway and shows changes made in the Designer or the gateway web interface. `apply` reverts them to your configuration.
