@@ -69,6 +69,9 @@ jobs:
           exit-code: '1'
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+          # the provider's own modules: .forgego/ pins dev tools that never ship, and
+          # webpage.yaml checks the site's dependencies
+          skip-dirs: '.forgego,webpage'
 
   ignition:
     needs: [testing, trivy]
