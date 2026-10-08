@@ -47,7 +47,7 @@ Ignition requires specific handling for sensitive fields like Database passwords
 
 ### Signatures & Concurrency
 
-Most Ignition resources utilize a **Signature** (a unique hash of the current configuration). 
+Most Ignition resources utilize a **Signature** (a unique hash of the current configuration).
 
 - **Optimistic Locking**: When updating or deleting a resource, the provider sends the last known signature. If the resource was modified manually in the Gateway since the last Terraform run, the signatures will mismatch, and the API will reject the change.
 - **Automatic Reconciliation**: Terraform handles this via drift detection. A `terraform plan` will fetch the latest signature and configuration, allowing you to reconcile changes safely.
