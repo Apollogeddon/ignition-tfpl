@@ -12,7 +12,7 @@ import (
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.24.0 generate --provider-name ignition
 
 // these will be set by the linker
-var version = "1.0.0" // x-release-please-version
+var version = "1.1.0" // x-release-please-version
 
 func main() {
 	var debug bool
