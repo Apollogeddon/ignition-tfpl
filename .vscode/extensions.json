@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "biomejs.biome",
+    "astro-build.astro-vscode",
+    "golang.go",
+    "hashicorp.terraform",
+    "DavidAnson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}
