@@ -88,3 +88,9 @@ See the [Documentation](https://apollogeddon.github.io/ignition-tfpl) for the fu
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+Run `npm ci` once per clone to install the commit hook: commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses for versioning. Installing needs a GitHub token with `read:packages` in your user `~/.npmrc`, for `@apollogeddon/forgejs`. To preview the reference docs locally, generate them with `.github/scripts/ci/generate-docs.sh` and `migrate-docs.sh`; git ignores the output.
+
+## 📄 License
+
+Released under the [MIT License](LICENSE).

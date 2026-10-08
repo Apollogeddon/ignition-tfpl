@@ -9,7 +9,8 @@ The [`.index.yaml`](./workflows/.index.yaml) workflow is the primary entry point
 1. **Testing & Quality**: Runs the unit testing and quality suites in parallel.
 2. **Ignition Acceptance Tests**: Launches a real Ignition Gateway via Docker Compose and runs Terraform acceptance tests against it.
 3. **Release**: Triggered only after all previous checks pass.
-4. **Webpage**: Updates the documentation site after a successful release.
+
+The documentation site has its own workflow (below), which runs on every push and pull request.
 
 ---
 
@@ -48,9 +49,10 @@ The [`release.yaml`](./workflows/release.yaml) workflow handles versioning and d
 
 The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](https://astro.build/)-based documentation site:
 
-- **Generation**: Uses `tfplugindocs` to generate technical documentation from the provider's schema and examples.
-- **Migration**: Uses a custom script [`document.sh`](../scripts/document.sh) to transform the generated Markdown into a format suitable for the Astro site.
-- **Deploy**: Builds the static site and publishes it to **GitHub Pages**.
+- **Quality**: Calls [forgejs](https://github.com/apollogeddon/forgejs)'s `quality.yml`: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
+- **Markdown**: Lints every Markdown file in the repository with `markdownlint-cli2`.
+- **Build**: Uses `tfplugindocs` to generate the provider docs from the schema and examples, copies them into the site with `migrate-docs.sh`, and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request.
+- **Deploy**: On `main`, publishes the build artifacts to **GitHub Pages**.
 
 ---
 
