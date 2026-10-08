@@ -5,7 +5,9 @@
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "main.go"
-      ]
+      ],
+      "draft": true,
+      "force-tag-creation": true
     }
   },
   "plugins": [

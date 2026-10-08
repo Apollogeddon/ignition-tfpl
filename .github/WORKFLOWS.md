@@ -40,7 +40,9 @@ The [`ignition.yaml`](./workflows/ignition.yaml) workflow performs "real-world" 
 The [`release.yaml`](./workflows/release.yaml) workflow handles versioning and distribution:
 
 - **Release Please**: Automatically manages version bumps and `CHANGELOG.md` updates based on conventional commits.
-- **GoReleaser**: Packages the provider for multiple platforms, signs the binaries with GPG, and publishes them to GitHub Releases.
+- **GoReleaser**: Builds the provider in the layout the Terraform Registry expects (`.goreleaser.yaml`): a zip per platform, a `SHA256SUMS` file signed with the GPG key, and the registry manifest (`terraform-registry-manifest.json`).
+
+release-please creates each release as a draft, and GoReleaser attaches the files and then publishes it, so the release flow also works with immutable releases. Try the build locally with `task release:snapshot`, which skips the signing.
 
 ## 📖 Documentation
 
