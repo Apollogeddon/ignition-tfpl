@@ -3,81 +3,67 @@ title: Architecture
 description: Internal architecture and design of the Ignition Terraform Provider.
 ---
 
-This document outlines the technical design of the `ignition-tofu` provider, explaining how Terraform configuration maps to Ignition Gateway resources.
+This page describes how the `ignition` provider turns OpenTofu or Terraform configuration into calls to the Ignition gateway's REST API. It is for contributors and for users who want to understand how the provider behaves during `plan` and `apply`.
 
-## High-Level Overview
+## Overview
 
-The provider serves as a bridge between the **HashiCorp Terraform Plugin Framework** and the **Ignition Gateway REST API** (`/data/api/v1`). It is written in Go and structured into three primary layers.
+The provider is written in Go with the [Terraform Plugin Framework](https://developer.hashicorp.com/terraform/plugin/framework). It talks to the gateway's REST API under `/data/api/v1` and has two layers: the provider layer, which implements the plugin protocol, and a client layer, which makes the HTTP requests.
 
 ```mermaid
 flowchart LR
-    TF[Terraform CLI] <--> Provider[Provider Layer]
-    Provider <--> Client[Internal Go Client]
-    Client <--> API[Ignition Gateway API]
-    API <--> Config[Ignition Internal DB]
+    CLI[OpenTofu or Terraform] <--> Provider[Provider layer]
+    Provider <--> Client[Go client]
+    Client <--> API[Gateway REST API]
+    API <--> Config[Gateway configuration]
 ```
 
-## Component Layers
+## Provider layer
 
-### 1. Provider Layer (`internal/provider`)
+The provider layer (`internal/provider`) defines the schema of each resource and data source: its attributes, types and validation.
 
-This layer implements the Terraform protocol. It defines the Schema (attributes, types, validation) for Resources and Data Sources.
+- **Schema mapping**: each resource maps its HCL attributes to the Go structs the client sends to the gateway, and maps the gateway's response back to state.
+- **Shared lifecycle**: most resources use the generic `GenericIgnitionResource[T, M]` type in `internal/provider/base`, which implements create, read, update and delete once. Each resource supplies only its mapping between state and the gateway's configuration.
 
-- **Schema Mapping**: Converts Terraform HCL attributes (snake_case) into Go structs.
-- **State Management**: Handles the Terraform State (`terraform.tfstate`), ensuring drift detection works correctly.
-- **Generic Implementation**: Uses a generic `GenericIgnitionResource[T]` wrapper to standardize Create, Read, Update, and Delete (CRUD) logic across mostly uniform Ignition resources, reducing code duplication.
+## Client layer
 
-### 2. Client Layer (`internal/client`)
+The client (`internal/client`) handles HTTP communication with the gateway and authenticates with the `X-Ignition-API-Token` header.
 
-A dedicated Go client that handles the HTTP communication with the Ignition Gateway.
+- **Retries**: the client uses `hashicorp/go-retryablehttp` with up to 10 retries and a 10-second timeout per request. Configuration changes often restart a gateway module, and the retries let a request succeed once the module is back.
+- **Types**: the client defines Go structs for the gateway's configuration objects, such as `Project`, `DatabaseConfig` and `TagProviderConfig`.
+- **Waiting for projects**: after creating a project, the client polls the gateway every 200 ms, for up to 10 seconds, until the project can be read.
 
-- **Retry Logic**: Uses `hashicorp/go-retryablehttp` with up to 10 retries to handle transient network failures or Gateway restarts. Configuration changes in Ignition often trigger module restarts; the client is designed to persist through these periods.
-- **Type Definitions**: Contains Go struct definitions for Ignition's configuration objects (e.g., `Project`, `DatabaseConfig`, `TagProviderConfig`).
-- **Resource Waiting**: Implemented polling logic for resources that are not immediately available after creation, such as Projects (which poll every 200ms for up to 10s).
+## Secrets
 
-### 3. Security & Crypto
+Some attributes, such as database and SMTP passwords, notification profile passwords and OIDC client secrets, are secrets.
 
-Ignition requires specific handling for sensitive fields like Database passwords or SMTP credentials.
+- **Encryption by the gateway**: before writing a secret to the gateway configuration, the provider sends it to the gateway's `/data/api/v1/encryption/encrypt` endpoint, which returns an embedded secret in JWE format. The provider includes the encrypted value, not the plaintext, in the resource's configuration.
+- **State**: secret attributes are marked sensitive, so `plan` and `apply` output hides them. As with any value in your configuration, the value you set is stored in state, so keep your state secure.
+- **Refresh**: the gateway does not return secrets when the provider reads a resource, so the provider keeps the value already in state. This avoids a permanent difference in every plan.
 
-- **Encryption**: The provider does **not** send passwords in plaintext in the JSON body.
-- **Encryption Endpoint**: It uses the `/data/api/v1/encryption/encrypt` endpoint to transform a plaintext secret into an **Embedded Secret** (JWE format). This happens in-flight during the `Create` or `Update` phase.
-- **State Storage**: The encrypted value or the state signature is stored in Terraform state, ensuring the plaintext password is never exposed in API logs or stored unencrypted in the state file.
+## Signatures
 
-## Key Abstractions
+Most gateway resources carry a **signature**: a value that changes whenever the resource's configuration changes.
 
-### Signatures & Concurrency
+- The provider stores the signature in state and sends it with each update and delete.
+- If the resource changed on the gateway after the provider last read it, the signature no longer matches and the gateway rejects the change.
+- `plan` refreshes each resource, including its signature, so a fresh plan picks up changes made in the Designer or the gateway web interface and shows them as drift.
 
-Most Ignition resources utilize a **Signature** (a unique hash of the current configuration).
+## Resource lifecycle
 
-- **Optimistic Locking**: When updating or deleting a resource, the provider sends the last known signature. If the resource was modified manually in the Gateway since the last Terraform run, the signatures will mismatch, and the API will reject the change.
-- **Automatic Reconciliation**: Terraform handles this via drift detection. A `terraform plan` will fetch the latest signature and configuration, allowing you to reconcile changes safely.
+When you run `apply`:
 
-### Gateway Restarts & Persistence
+1. **Plan**: the CLI compares your configuration with state, after the provider has refreshed state from the gateway.
+2. **Create or update**:
+    - The provider maps the plan to the resource's Go struct, such as `DatabaseConfig`.
+    - Secrets are encrypted through the encryption endpoint.
+    - The provider sends the configuration to the resource's endpoint, for example `/data/api/v1/resources/ignition/database-connection` for most resources, or `/data/api/v1/projects` for projects.
+3. **Read**: the provider fetches the resource by name, maps the response back to state, and keeps secret values that the gateway does not return.
 
-Certain resources (like Database Connections or OPC UA Devices) may trigger a module-level restart when their configuration is changed.
+## Singleton resources
 
-- **Retry Policy**: The internal client uses a backoff-retry strategy. If the Gateway API becomes temporarily unavailable during a restart, the provider will wait and retry the operation until it succeeds or the 10-attempt limit is reached.
-- **Project Polling**: Projects involve file-system operations on the Gateway. The provider includes a specific "wait-for-ready" lifecycle step to ensure the project is fully initialized before returning control to Terraform.
+Some gateway settings exist exactly once per gateway:
 
-## Resource Lifecycle
+- `ignition_redundancy` (fixed name `gateway-redundancy`)
+- `ignition_gan_settings` (fixed name `gateway-network-settings`)
 
-When you apply a configuration:
-
-1. **Plan**: Terraform compares your HCL config with the stored State and the live Gateway configuration (Read).
-2. **Create/Update**:
-    - The provider maps the plan to a specific Go struct (e.g., `DatabaseConfig`).
-    - Sensitive fields are sent to the encryption endpoint.
-    - The final JSON is POST/PUT to the resource endpoint (e.g., `/data/api/v1/resources/ignition/database-connection`).
-3. **Read (Refresh)**:
-    - The provider fetches the resource by Name.
-    - It compares the returned configuration with the State.
-    - **Note**: The API often does not return sensitive fields (like passwords). The provider handles this by preserving the existing state value if the API response is empty for that field, preventing perpetual diffs.
-
-## Singleton Resources
-
-Some Ignition settings are global (Singletons), such as:
-
-- **Redundancy Settings**
-- **Gateway Network (GAN) Settings**
-
-The provider treats these as resources with a fixed name (e.g., `gateway-redundancy`). Deleting these resources in Terraform usually implies reverting them to a default "safe" state (e.g., Independent role) rather than "destroying" the configuration, as these settings cannot truly be removed from the Gateway.
+The settings always exist, so creating one of these resources updates the gateway's current settings. They cannot be removed from the gateway, so destroying `ignition_redundancy` resets the gateway to the independent role with default settings, and destroying `ignition_gan_settings` only removes it from state.
