@@ -44,7 +44,7 @@ tasks:
   release:snapshot:
     desc: Build every release binary into dist/ without publishing
     cmds:
-      - go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean
+      - go run github.com/goreleaser/goreleaser/v2@v2.18.2 release --snapshot --clean --skip=sign
   test:
     desc: Run the tests with coverage and a JUnit report
     cmds:
