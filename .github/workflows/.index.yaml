@@ -17,18 +17,6 @@ on:
       - '.github/workflows/ignition.yaml'
       - '.github/workflows/release.yaml'
   pull_request:
-    paths:
-      - go.mod
-      - go.sum
-      - main.go
-      - 'internal/**'
-      - '.forgego/**'
-      - '.golangci*.yml'
-      - Taskfile.yml
-      - docker-compose.yml
-      - '.github/workflows/.index.yaml'
-      - '.github/workflows/ignition.yaml'
-      - '.github/workflows/release.yaml'
   workflow_dispatch:
 
 concurrency:
@@ -41,17 +29,82 @@ permissions:
   pages: write
   pull-requests: write
   security-events: write
+  # the webpage installs @apollogeddon/forgejs from GitHub Packages
+  packages: read
 
 jobs:
+  # What a pull request needs: the provider's pipeline when its code, its tooling or the
+  # workflows that test and release it changed, and shellcheck when a script changed.
+  # The webpage and the Dependabot merge run on every pull request.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      scripts: ${{ steps.diff.outputs.scripts }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find what changed
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          CODE_INPUTS: '^(go\.(mod|sum)$|main\.go$|internal/|\.forgego/|\.golangci.*\.yml$|Taskfile\.yml$|docker-compose\.yml$|\.github/workflows/(\.index|ignition|release)\.yaml$)'
+          SCRIPT_INPUTS: '(\.sh$|^\.github/workflows/\.index\.yaml$)'
+        run: |
+          # a push or a manual run releases, so it runs the whole pipeline
+          if [ "$EVENT" != pull_request ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "scripts=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          printf '%s\n' "$files"
+          if printf '%s\n' "$files" | grep -qE "$CODE_INPUTS"; then code=true; else code=false; fi
+          if printf '%s\n' "$files" | grep -qE "$SCRIPT_INPUTS"; then scripts=true; else scripts=false; fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+          echo "scripts=$scripts" | tee -a "$GITHUB_OUTPUT"
+
+  shellcheck:
+    needs: changes
+    if: needs.changes.outputs.scripts == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      # pinned, as the runner's shellcheck version changes what it reports
+      - name: Install shellcheck
+        env:
+          VERSION: v0.11.0
+        run: |
+          curl -sSfL "https://github.com/koalaman/shellcheck/releases/download/$VERSION/shellcheck-$VERSION.linux.x86_64.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP" --strip-components=1 "shellcheck-$VERSION/shellcheck"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - name: shellcheck
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck
+
   # forgego's lint, tidy, govulncheck and OSV checks, the unit tests and the build.
   # Gitleaks runs in webpage.yaml, over the whole repository.
   testing:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: apollogeddon/forgego/.github/workflows/testing.yml@main
     with:
       enable_secrets: false
     secrets: inherit
 
   trivy:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -83,3 +136,17 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/release.yaml
     secrets: inherit
+
+  # pull requests only: on main, webpage.yaml runs on its own push trigger
+  webpage:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/webpage.yaml
+
+  # last, so a Dependabot pull request merges only once every check above has passed
+  auto-merge:
+    needs: [shellcheck, ignition, webpage]
+    if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' }}
+    uses: apollogeddon/forgejs/.github/workflows/merge.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
