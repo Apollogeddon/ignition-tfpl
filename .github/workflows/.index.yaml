@@ -36,7 +36,3 @@ jobs:
     needs: ignition
     uses: ./.github/workflows/release.yaml
     secrets: inherit
-
-  webpage:
-    needs: release
-    uses: ./.github/workflows/webpage.yaml
