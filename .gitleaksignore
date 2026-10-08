@@ -1,0 +1,2 @@
+# The SMTP profile example documents the password argument with a placeholder ("supersecret"), not a real credential
+40e2bfeeccc2f604997ac9059f147ac7b561018f:examples/resources/ignition_smtp_profile/resource.tf:hashicorp-tf-password:8
