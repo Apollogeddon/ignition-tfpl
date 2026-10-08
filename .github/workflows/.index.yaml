@@ -9,7 +9,31 @@ on:
       - go.sum
       - main.go
       - 'internal/**'
+      - '.forgego/**'
+      - '.golangci*.yml'
+      - Taskfile.yml
+      - docker-compose.yml
+      - '.github/workflows/.index.yaml'
+      - '.github/workflows/ignition.yaml'
+      - '.github/workflows/release.yaml'
+  pull_request:
+    paths:
+      - go.mod
+      - go.sum
+      - main.go
+      - 'internal/**'
+      - '.forgego/**'
+      - '.golangci*.yml'
+      - Taskfile.yml
+      - docker-compose.yml
+      - '.github/workflows/.index.yaml'
+      - '.github/workflows/ignition.yaml'
+      - '.github/workflows/release.yaml'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: write
@@ -19,20 +43,40 @@ permissions:
   security-events: write
 
 jobs:
+  # forgego's lint, tidy, govulncheck and OSV checks, the unit tests and the build.
+  # Gitleaks runs in webpage.yaml, over the whole repository.
   testing:
-    uses: ./.github/workflows/testing.yaml
+    uses: apollogeddon/forgego/.github/workflows/testing.yml@main
+    with:
+      enable_secrets: false
     secrets: inherit
 
-  quality:
-    uses: ./.github/workflows/quality.yaml
-    secrets: inherit
+  trivy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          exit-code: '1'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   ignition:
-    needs: [testing, quality]
+    needs: [testing, trivy]
     uses: ./.github/workflows/ignition.yaml
     secrets: inherit
 
   release:
     needs: ignition
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/release.yaml
     secrets: inherit

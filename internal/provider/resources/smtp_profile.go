@@ -16,8 +16,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &SMTPProfileResource{}
-var _ resource.ResourceWithImportState = &SMTPProfileResource{}
+var (
+	_ resource.Resource                = &SMTPProfileResource{}
+	_ resource.ResourceWithImportState = &SMTPProfileResource{}
+)
 
 func NewSMTPProfileResource() resource.Resource {
 	return &SMTPProfileResource{}

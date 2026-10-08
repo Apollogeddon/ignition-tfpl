@@ -150,7 +150,6 @@ func TestClient_CreateResource_ResourceChanges(t *testing.T) {
 	c, _ := NewClient(server.URL, "token", false)
 	var dest ResourceResponse[map[string]any]
 	err := c.CreateResource(context.Background(), "test", map[string]any{}, &dest)
-
 	if err != nil {
 		t.Fatalf("Unexpected error handling ResourceChangesResponse: %v", err)
 	}

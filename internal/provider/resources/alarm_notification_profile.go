@@ -17,8 +17,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &AlarmNotificationProfileResource{}
-var _ resource.ResourceWithImportState = &AlarmNotificationProfileResource{}
+var (
+	_ resource.Resource                = &AlarmNotificationProfileResource{}
+	_ resource.ResourceWithImportState = &AlarmNotificationProfileResource{}
+)
 
 func NewAlarmNotificationProfileResource() resource.Resource {
 	return &AlarmNotificationProfileResource{}
@@ -243,10 +245,8 @@ func (r *AlarmNotificationProfileResource) MapClientToState(ctx context.Context,
 			if v, ok := settings["username"].(string); ok && v != "" {
 				model.EmailConfig.Username = types.StringValue(v)
 			}
-		} else {
-			if model.EmailConfig.SSLEnabled.IsUnknown() {
-				model.EmailConfig.SSLEnabled = types.BoolValue(false)
-			}
+		} else if model.EmailConfig.SSLEnabled.IsUnknown() {
+			model.EmailConfig.SSLEnabled = types.BoolValue(false)
 		}
 	} else if config.Profile.Type != "" {
 		model.Type = types.StringValue(config.Profile.Type)

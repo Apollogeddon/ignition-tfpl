@@ -17,8 +17,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &DatabaseConnectionResource{}
-var _ resource.ResourceWithImportState = &DatabaseConnectionResource{}
+var (
+	_ resource.Resource                = &DatabaseConnectionResource{}
+	_ resource.ResourceWithImportState = &DatabaseConnectionResource{}
+)
 
 func NewDatabaseConnectionResource() resource.Resource {
 	return &DatabaseConnectionResource{}
