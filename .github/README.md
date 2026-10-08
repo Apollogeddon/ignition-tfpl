@@ -27,26 +27,6 @@ The **Ignition Terraform Provider** allows you to manage Inductive Automation's 
 - **Drift Detection**: Automatically detect and reconcile manual changes made in the Designer or Gateway Web Interface.
 - **Enterprise Ready**: Support for complex architectures including Redundancy, Gateway Networks, and Identity Providers (SAML/OIDC).
 
-## 🛠️ Usage
-
-### Quick Start
-
-Configure your provider and manage a project in seconds:
-
-```hcl
-provider "ignition" {
-  host  = "http://localhost:8088"
-  token = var.ignition_token
-}
-
-resource "ignition_project" "example" {
-  name        = "MyEnterpriseProject"
-  title       = "Enterprise Dashboard"
-  description = "Managed via Terraform"
-  enabled     = true
-}
-```
-
 ## 📦 Installation
 
 ### Prerequisites
@@ -73,6 +53,26 @@ terraform {
 | :--- | :--- |
 | `IGNITION_HOST` | The base URL of the Ignition Gateway (e.g., `http://10.10.1.5:8088`). |
 | `IGNITION_TOKEN` | The API Token generated in the Ignition Gateway Config section. |
+
+## 🛠️ Usage
+
+### Quick Start
+
+Configure your provider and manage a project in seconds:
+
+```hcl
+provider "ignition" {
+  host  = "http://localhost:8088"
+  token = var.ignition_token
+}
+
+resource "ignition_project" "example" {
+  name        = "MyEnterpriseProject"
+  title       = "Enterprise Dashboard"
+  description = "Managed via Terraform"
+  enabled     = true
+}
+```
 
 ## 🧩 Supported Resources
 
