@@ -15,8 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ resource.Resource = &DeviceResource{}
-var _ resource.ResourceWithImportState = &DeviceResource{}
+var (
+	_ resource.Resource                = &DeviceResource{}
+	_ resource.ResourceWithImportState = &DeviceResource{}
+)
 
 func NewDeviceResource() resource.Resource {
 	return &DeviceResource{}
