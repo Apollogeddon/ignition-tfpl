@@ -19,8 +19,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &StoreAndForwardResource{}
-var _ resource.ResourceWithImportState = &StoreAndForwardResource{}
+var (
+	_ resource.Resource                = &StoreAndForwardResource{}
+	_ resource.ResourceWithImportState = &StoreAndForwardResource{}
+)
 
 func NewStoreAndForwardResource() resource.Resource {
 	return &StoreAndForwardResource{}

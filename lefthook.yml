@@ -1,7 +1,19 @@
-# Lefthook Configuration
-# Refer to https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+lefthook: go tool -modfile=.forgego/lefthook/go.mod lefthook
 
+pre-commit:
+  commands:
+    format:
+      glob: "*.go"
+      run: go tool -modfile=.forgego/golangci-lint/go.mod golangci-lint fmt {staged_files}
+      stage_fixed: true
+    sync-check:
+      run: go tool -modfile=.forgego/task/go.mod task sync-check
+pre-push:
+  commands:
+    lint:
+      glob: "*.go"
+      run: go tool -modfile=.forgego/golangci-lint/go.mod golangci-lint run
 commit-msg:
   commands:
-    commitlint:
-      run: npx commitlint --edit {1}
+    conventional-commit:
+      run: go tool -modfile=.forgego/task/go.mod task commit-msg -- {1}

@@ -17,11 +17,12 @@ type APIErrorResponse struct {
 
 func (e *APIErrorResponse) Error() string {
 	var msg string
-	if e.Problem != nil {
+	switch {
+	case e.Problem != nil:
 		msg = "API error: " + e.Problem.Message
-	} else if len(e.Messages) > 0 {
+	case len(e.Messages) > 0:
 		msg = fmt.Sprintf("API error: %v", e.Messages)
-	} else {
+	default:
 		msg = "unknown API error"
 	}
 

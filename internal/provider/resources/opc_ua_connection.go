@@ -18,8 +18,10 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ resource.Resource = &OpcUaConnectionResource{}
-var _ resource.ResourceWithImportState = &OpcUaConnectionResource{}
+var (
+	_ resource.Resource                = &OpcUaConnectionResource{}
+	_ resource.ResourceWithImportState = &OpcUaConnectionResource{}
+)
 
 func NewOpcUaConnectionResource() resource.Resource {
 	return &OpcUaConnectionResource{}

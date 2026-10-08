@@ -42,6 +42,7 @@ func TestAccUserSourceResource(t *testing.T) {
 		},
 	})
 }
+
 func testAccUserSourceResourceConfig(name, typeVal, desc string) string {
 	return fmt.Sprintf(`
 provider "ignition" {}
