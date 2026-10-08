@@ -1,8 +1,13 @@
 {
-    "cSpell.words": [
-        "inductiveautomation",
-        "opcua",
-        "tfpl",
-        "tfsdk"
-    ]
+  "cSpell.words": ["biomejs", "commitlint", "gitleaks", "inductiveautomation", "lefthook", "opcua", "osv", "tfpl", "tfsdk"],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": "explicit",
+    "source.fixAll.biome": "explicit"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  }
 }
