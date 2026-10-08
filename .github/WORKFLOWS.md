@@ -37,7 +37,9 @@ The [`ignition.yaml`](./workflows/ignition.yaml) workflow performs "real-world" 
 
 - **Environment**: Spins up an Ignition 8.3 Gateway using `docker-compose.yml`.
 - **Initialization**: Waits for the Gateway to be healthy and accessible.
-- **Execution**: Runs `go test -v ./internal/provider/...` with `TF_ACC=1` to execute the full Terraform resource lifecycle (Create, Read, Update, Delete) against the live API.
+- **Execution**: Runs `task test:acc`, which executes the full resource lifecycle (Create, Read, Update, Delete) against the live API with OpenTofu.
+
+The unit and acceptance tests and the docs build all run the OpenTofu release pinned in `.github/scripts/install-tofu.sh`, which checks the download against the release's checksums.
 
 ## 🚀 Release Process
 
@@ -54,7 +56,7 @@ The [`webpage.yaml`](./workflows/webpage.yaml) workflow manages the [Astro](http
 
 - **Quality**: Calls [forgejs](https://github.com/apollogeddon/forgejs)'s `quality.yml`: Gitleaks over the whole repository, OSV-Scanner on the site's dependencies, Biome and the type check.
 - **Markdown**: Lints every Markdown file in the repository with `markdownlint-cli2`.
-- **Build**: Uses `tfplugindocs` to generate the provider docs from the schema and examples, copies them into the site with `migrate-docs.sh`, and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request.
+- **Build**: Uses `tfplugindocs` to generate the provider docs from the schema OpenTofu reports and the examples, copies them into the site with `migrate-docs.sh`, and builds the static site located in the `webpage/` directory, on pull requests too, so a broken site fails the pull request.
 - **Deploy**: On `main`, publishes the build artifacts to **GitHub Pages**.
 
 ---

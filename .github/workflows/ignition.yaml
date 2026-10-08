@@ -22,10 +22,8 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_wrapper: false
+      - name: Install OpenTofu
+        run: .github/scripts/install-tofu.sh
 
       - name: Start Ignition Gateway
         run: sh .github/scripts/ci/start-ignition.sh
@@ -38,6 +36,4 @@ jobs:
         continue-on-error: true
 
       - name: Run Acceptance Tests
-        run: go test -v ./internal/provider/...
-        env:
-          TF_ACC: "1"
+        run: go tool -modfile=.forgego/task/go.mod task test:acc
