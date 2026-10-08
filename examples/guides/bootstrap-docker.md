@@ -2,7 +2,7 @@
 page_title: "Bootstrapping a Gateway with Docker"
 subcategory: ""
 description: |-
-  Provisioning and configuring an Ignition Gateway from a single Terraform apply.
+  Provisioning and configuring an Ignition Gateway from a single apply.
 ---
 
 # Bootstrapping a Gateway with Docker
@@ -11,7 +11,7 @@ The `ignition` provider manages resources on a Gateway that is already
 running — it has no way to install Ignition itself, since there is no REST
 API to call until the Gateway exists. To get a fully bootstrapped Gateway
 (built from a seed backup, restored on first boot, and configured) from a
-single `terraform apply`, pair this provider with
+single `tofu apply` (or `terraform apply`), pair this provider with
 [`kreuzwerker/docker`](https://registry.terraform.io/providers/kreuzwerker/docker/latest)
 in the same root module.
 
@@ -110,15 +110,15 @@ token before relying on it.
 
 **The container's external port is fixed, not random.** A `provider` block's
 configuration can't reference another resource's computed attributes within
-the same apply — Terraform needs to know how to reach the provider's API
+the same apply — OpenTofu or Terraform needs to know how to reach the provider's API
 before it can plan resources that use it. Pinning `external = 8088` lets the
 `ignition` provider's `host` be a plain string instead of a reference,
 sidestepping that limitation entirely.
 
 **Every `ignition_*` resource needs `depends_on = [docker_container.gateway]`.**
 `provider` blocks don't support `depends_on`, and because `host` above is a
-static string rather than a reference to the container, Terraform has no
-other way to infer that the Gateway must exist first — without it, Terraform
+static string rather than a reference to the container, OpenTofu has no
+other way to infer that the Gateway must exist first — without it, it
 may try to create the container and configure the Gateway in parallel. For a
 real configuration with many resources, put them in a child module and set
 `depends_on` on the `module` call once instead of repeating it everywhere:
