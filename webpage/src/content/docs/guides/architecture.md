@@ -1,5 +1,6 @@
 ---
 title: Architecture
+order: 2
 description: Internal architecture and design of the Ignition Terraform Provider.
 ---
 

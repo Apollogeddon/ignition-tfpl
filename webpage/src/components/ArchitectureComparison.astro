@@ -4,7 +4,7 @@ const base = import.meta.env.BASE_URL;
 const models = [
   {
     name: "Resources",
-    tagline: "Manage Configuration",
+    tagline: "Manage configuration",
     description:
       "Declaratively define and manage Ignition resources including projects, connections, and security settings.",
     stats: [
@@ -12,20 +12,20 @@ const models = [
       { label: "Action", value: "CRUD" },
       { label: "Control", value: "Full" },
     ],
-    features: ["Drift Detection", "Version Control", "Automated Cleanup"],
+    features: ["Drift detection", "Version control", "Automated cleanup"],
     link: `${base}/docs/reference/resources/ignition_project/`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
   },
   {
     name: "Data sources",
-    tagline: "Reference Existing",
+    tagline: "Reference existing",
     description: "Fetch configuration from an existing Gateway to use as variables or inputs for other resources.",
     stats: [
       { label: "Stateful", value: "No" },
       { label: "Action", value: "Read" },
       { label: "Control", value: "None" },
     ],
-    features: ["External Referencing", "Safe Lookup", "Zero Impact"],
+    features: ["External referencing", "Safe lookup", "Zero impact"],
     link: `${base}/docs/reference/data-sources/ignition_project/`,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="10" x2="6" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/></svg>`,
   },
@@ -34,8 +34,8 @@ const models = [
 
 <section class="comparison-section">
   <div class="header">
-    <h2>Understand the <span class="text-gradient">abstractions</span></h2>
-    <p>Choose between managing resources or referencing existing configuration.</p>
+    <h2>Choose your <span class="text-gradient">approach</span></h2>
+    <p>Manage configuration as resources, or read existing settings as data sources.</p>
   </div>
 
   <div class="comparison-grid">
@@ -70,7 +70,7 @@ const models = [
         </ul>
 
         <a href={model.link} class="btn-more">
-          View Sources
+          Read the docs
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
         </a>
       </div>

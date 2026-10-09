@@ -1,11 +1,12 @@
 ---
-title: Installation
+title: Getting started
+order: 1
 description: How to install and configure the Ignition Terraform Provider.
 ---
 
 This guide shows how to install the `ignition` provider from a GitHub release, connect it to an Ignition gateway, and check that it works.
 
-## Prerequisites
+## Requirements
 
 - OpenTofu 1.6 or later, or Terraform 1.0 or later. The provider is developed and tested with OpenTofu.
 - An Ignition gateway, version 8.3 or later. The REST API the provider uses was introduced in Ignition 8.3.0.

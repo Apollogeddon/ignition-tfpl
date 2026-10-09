@@ -5,12 +5,12 @@ import FeatureGrid from "../components/FeatureGrid.astro";
 import Hero from "../components/Hero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const base = import.meta.env.BASE_URL;
+const year = new Date().getFullYear();
 ---
 
-<BaseLayout title="Ignition TF Provider" description="Manage your Inductive Automation Ignition Gateway infrastructure as code.">
+<BaseLayout title="Ignition TF Provider · Ignition configuration as code" description="A Terraform and OpenTofu provider for Ignition that manages projects, connections and gateway settings through its REST API.">
   <Hero 
-    tagline="Manage your Inductive Automation Ignition Gateway infrastructure as code."
+    tagline="A Terraform and OpenTofu provider for Ignition that manages projects, connections and gateway settings through its REST API."
     logo={logoImage}
   />
   
@@ -20,8 +20,8 @@ const base = import.meta.env.BASE_URL;
   
   <footer class="custom-footer">
     <div class="footer-content">
-      <p>Released under the MIT License.</p>
-      <p>Built with Astro.</p>
+      <p>© {year} Apollogeddon. Released under the MIT License.</p>
+      <p>Ignition is a trademark of Inductive Automation.</p>
     </div>
   </footer>
 </BaseLayout>
