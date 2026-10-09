@@ -8,7 +8,7 @@ Only the latest release of the provider receives security fixes.
 
 ## Reporting a vulnerability
 
-Report security vulnerabilities privately through [GitHub private vulnerability reporting](https://github.com/Apollogeddon/ignition-tfpl/security/advisories/new). Do not open a public issue.
+Report security vulnerabilities privately through [GitHub private vulnerability reporting](https://github.com/Apollogeddon/ignition-tfpr/security/advisories/new). Do not open a public issue.
 
 Expect an initial response within a few days. If the issue is confirmed, the fix is released as a patch version and you are credited in the advisory unless you ask not to be.
 

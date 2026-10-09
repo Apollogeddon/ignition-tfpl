@@ -14,7 +14,7 @@ terraform {
 # used by docker-compose.yml for acceptance testing, expressed as a native
 # Terraform resource instead of Docker Compose.
 resource "docker_image" "gateway" {
-  name = "ignition-tfpl-bootstrap"
+  name = "ignition-tfpr-bootstrap"
   build {
     context    = "${path.module}/../.."
     dockerfile = "bootstrap/Dockerfile"

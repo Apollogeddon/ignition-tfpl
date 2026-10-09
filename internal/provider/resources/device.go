@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/apollogeddon/ignition-tfpl/internal/client"
-	"github.com/apollogeddon/ignition-tfpl/internal/provider/base"
+	"github.com/apollogeddon/ignition-tfpr/internal/client"
+	"github.com/apollogeddon/ignition-tfpr/internal/provider/base"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
