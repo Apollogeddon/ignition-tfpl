@@ -1,5 +1,5 @@
 {
-  "name": "ignition-tfpl",
+  "name": "ignition-tofu",
   "private": true,
   "type": "module",
   "scripts": {

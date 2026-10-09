@@ -6,7 +6,7 @@
 # Protocol: https://opentofu.org/docs/internals/provider-network-mirror-protocol/
 set -euo pipefail
 
-repo="${GITHUB_REPOSITORY:-apollogeddon/ignition-tfpl}"
+repo="${GITHUB_REPOSITORY:-apollogeddon/ignition-tofu}"
 downloads="${MIRROR_DOWNLOAD_URL:-https://github.com/$repo/releases/download}"
 namespace=apollogeddon
 type=ignition

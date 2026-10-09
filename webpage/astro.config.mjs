@@ -8,6 +8,6 @@ import mermaid from "astro-mermaid";
 // https://astro.build/config
 export default defineConfig({
   site: "https://apollogeddon.github.io",
-  base: "/ignition-tfpl",
+  base: "/ignition-tofu",
   integrations: [mdx(), sitemap(), mermaid()],
 });

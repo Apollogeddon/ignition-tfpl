@@ -3,7 +3,7 @@ package base
 import (
 	"context"
 
-	"github.com/apollogeddon/ignition-tfpl/internal/client"
+	"github.com/apollogeddon/ignition-tofu/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"

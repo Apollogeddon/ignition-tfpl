@@ -1,18 +1,18 @@
 <br />
 <div align="center">
-  <a href="https://apollogeddon.github.io/ignition-tfpl">
+  <a href="https://apollogeddon.github.io/ignition-tofu">
     <img src="webpage/public/favicon.png" alt="Logo" width="100" height="100">
   </a>
-  <h3 align="center">Ignition TF Provider</h3>
+  <h3 align="center">Ignition Tofu Provider</h3>
   <p align="center">
     A Terraform and OpenTofu provider for Ignition that manages projects, connections and gateway settings through its REST API.
     <br />
-    <a href="https://apollogeddon.github.io/ignition-tfpl"><strong>Read the docs</strong></a>
+    <a href="https://apollogeddon.github.io/ignition-tofu"><strong>Read the docs</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Report a bug</a>
+    <a href="https://github.com/apollogeddon/ignition-tofu/issues">Report a bug</a>
     ·
-    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Request a feature</a>
+    <a href="https://github.com/apollogeddon/ignition-tofu/issues">Request a feature</a>
   </p>
 </div>
 
@@ -37,12 +37,12 @@ The provider is developed and tested with OpenTofu. It uses plugin protocol 6, s
 
 ## Installation
 
-The provider is not published to the OpenTofu or Terraform registry. Each [GitHub release](https://github.com/apollogeddon/ignition-tfpl/releases) contains a zip for each platform, a `SHA256SUMS` file with its GPG signature, and the provider manifest, and the [docs site](https://apollogeddon.github.io/ignition-tfpl/) serves every release as a provider network mirror. Point your CLI configuration (`~/.tofurc`) at it once:
+The provider is not published to the OpenTofu or Terraform registry. Each [GitHub release](https://github.com/apollogeddon/ignition-tofu/releases) contains a zip for each platform, a `SHA256SUMS` file with its GPG signature, and the provider manifest, and the [docs site](https://apollogeddon.github.io/ignition-tofu/) serves every release as a provider network mirror. Point your CLI configuration (`~/.tofurc`) at it once:
 
 ```hcl
 provider_installation {
   network_mirror {
-    url     = "https://apollogeddon.github.io/ignition-tfpl/providers/"
+    url     = "https://apollogeddon.github.io/ignition-tofu/providers/"
     include = ["registry.opentofu.org/apollogeddon/ignition"]
   }
   direct {
@@ -64,7 +64,7 @@ terraform {
 }
 ```
 
-For Terraform, use `~/.terraformrc` and `registry.terraform.io/apollogeddon/ignition`. See the [installation guide](https://apollogeddon.github.io/ignition-tfpl/docs/guides/installation/) for Windows, offline installs from a local filesystem mirror, and using a locally built provider.
+For Terraform, use `~/.terraformrc` and `registry.terraform.io/apollogeddon/ignition`. See the [installation guide](https://apollogeddon.github.io/ignition-tofu/docs/guides/installation/) for Windows, offline installs from a local filesystem mirror, and using a locally built provider.
 
 ## Quick start
 
@@ -101,7 +101,7 @@ Instead of setting `host` and `token` in configuration, you can set these enviro
 | Alarming and auditing | `ignition_alarm_journal`, `ignition_alarm_notification_profile`, `ignition_audit_profile` |
 | Data storage | `ignition_store_forward` |
 
-Data sources are available for projects, database connections, tag providers, user sources, SMTP profiles and store-and-forward engines. See the [documentation](https://apollogeddon.github.io/ignition-tfpl) for every attribute.
+Data sources are available for projects, database connections, tag providers, user sources, SMTP profiles and store-and-forward engines. See the [documentation](https://apollogeddon.github.io/ignition-tofu) for every attribute.
 
 ## Development
 

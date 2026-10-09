@@ -1,4 +1,4 @@
-module github.com/apollogeddon/ignition-tfpl
+module github.com/apollogeddon/ignition-tofu
 
 go 1.26.0
 

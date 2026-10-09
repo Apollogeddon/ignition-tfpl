@@ -13,7 +13,7 @@ The `ignition` provider configures a gateway that is already running. It cannot 
 
 This is the pattern this repository's `docker-compose.yml` uses for acceptance testing: copy a seed `.gwbk` backup into a derived image, restore it against the running container, then restart the gateway to apply the restore.
 
-The `ignition` provider is not yet published to a public registry. Install it from a GitHub release first, as described in the [installation guide](https://apollogeddon.github.io/ignition-tfpl/docs/guides/installation/). The example below uses the source address `registry.terraform.io/apollogeddon/ignition`, so with OpenTofu, place the release in a mirror directory under `registry.terraform.io` rather than `registry.opentofu.org`.
+The `ignition` provider is not yet published to a public registry. Install it from a GitHub release first, as described in the [installation guide](https://apollogeddon.github.io/ignition-tofu/docs/guides/installation/). The example below uses the source address `registry.terraform.io/apollogeddon/ignition`, so with OpenTofu, place the release in a mirror directory under `registry.terraform.io` rather than `registry.opentofu.org`.
 
 ## The pattern
 
@@ -83,9 +83,9 @@ resource "ignition_tag_provider" "example" {
 ```
 
 A complete, runnable version of this configuration is in
-[`examples/bootstrap-docker`](https://github.com/apollogeddon/ignition-tfpl/tree/main/examples/bootstrap-docker).
+[`examples/bootstrap-docker`](https://github.com/apollogeddon/ignition-tofu/tree/main/examples/bootstrap-docker).
 It builds its image from this repository's
-[`bootstrap/Dockerfile`](https://github.com/apollogeddon/ignition-tfpl/blob/main/bootstrap/Dockerfile).
+[`bootstrap/Dockerfile`](https://github.com/apollogeddon/ignition-tofu/blob/main/bootstrap/Dockerfile).
 
 ## Things to know
 

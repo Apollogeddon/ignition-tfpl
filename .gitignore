@@ -167,7 +167,7 @@ override.tf.json
 
 # Local development files
 dev.tfrc
-ignition-tfpl
+ignition-tofu
 
 # IDE specific ignores
 *.swp

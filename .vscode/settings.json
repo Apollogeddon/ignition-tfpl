@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["biomejs", "commitlint", "gitleaks", "inductiveautomation", "lefthook", "opcua", "osv", "tfpl", "tfsdk"],
+  "cSpell.words": ["biomejs", "commitlint", "gitleaks", "inductiveautomation", "lefthook", "opcua", "osv", "tfsdk"],
   "editor.codeActionsOnSave": {
     "source.organizeImports.biome": "explicit",
     "source.fixAll.biome": "explicit"

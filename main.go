@@ -5,7 +5,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/apollogeddon/ignition-tfpl/internal/provider"
+	"github.com/apollogeddon/ignition-tofu/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
