@@ -6,7 +6,6 @@
 ### Bug Fixes
 
 * **deps:** Upgrade modules with known vulnerabilities via govulncheck ([70cfed7](https://github.com/Apollogeddon/ignition-tfpl/commit/70cfed723bc9914416e7cab518ba1dbad7f4526d))
-* **resources:** Remove resources deleted outside OpenTofu from state on read ([1d5d387](https://github.com/Apollogeddon/ignition-tfpl/commit/1d5d3872d82bf1055817af61024c1014db9e0cb9))
 * **resources:** Remove resources deleted outside OpenTofu from state on read ([2ec5222](https://github.com/Apollogeddon/ignition-tfpl/commit/2ec52226e86433cede82fa77fd87f44fd8a7bb47))
 
 ## [1.1.0](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.0.0...v1.1.0) (2026-10-08)
@@ -14,7 +13,6 @@
 
 ### Features
 
-* Release the provider in the Terraform Registry's format ([544bd83](https://github.com/Apollogeddon/ignition-tfpl/commit/544bd83aa4a7aaf5dc7e1045aae227eb474f9110))
 * Release the provider in the Terraform Registry's format ([bfee84b](https://github.com/Apollogeddon/ignition-tfpl/commit/bfee84bef69dbefc793f66ec5fb0e9a841b2e9ff))
 
 
