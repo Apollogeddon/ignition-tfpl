@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"errors"
 
 	"github.com/apollogeddon/ignition-tfpl/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -105,7 +106,7 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 
 	res, err := r.GetFunc(ctx, baseModel.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading resource", err.Error())
+		HandleReadError(ctx, resp, err)
 		return
 	}
 
@@ -132,6 +133,17 @@ func (r *GenericIgnitionResource[T, M]) Read(ctx context.Context, req resource.R
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, data)...)
+}
+
+// HandleReadError reports a failed lookup in a resource's Read. A resource the
+// gateway no longer has (deleted outside OpenTofu) is removed from state, so
+// the next plan recreates it rather than failing.
+func HandleReadError(ctx context.Context, resp *resource.ReadResponse, err error) {
+	if errors.Is(err, client.ErrNotFound) {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	resp.Diagnostics.AddError("Error reading resource", err.Error())
 }
 
 func (r *GenericIgnitionResource[T, M]) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse, data *M, baseModel *BaseResourceModel) {
