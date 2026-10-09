@@ -14,7 +14,7 @@ This guide shows how to install the `ignition` provider from a GitHub release, c
 
 ## Install the provider
 
-The provider is not yet published to the OpenTofu or Terraform registry, so `tofu init` and `terraform init` cannot download it from a registry. Install it from a [GitHub release](https://github.com/apollogeddon/ignition-tfpr/releases) instead. Each release contains:
+The provider is not yet published to the OpenTofu or Terraform registry, so `tofu init` and `terraform init` cannot download it from a registry. Install it from a [GitHub release](https://github.com/apollogeddon/ignition-tofu/releases) instead. Each release contains:
 
 | File | Contents |
 | :--- | :--- |
@@ -27,14 +27,14 @@ Releases are built for Linux, macOS, Windows and FreeBSD.
 
 ### Use the network mirror (recommended)
 
-This site serves every release as a [provider network mirror](https://opentofu.org/docs/cli/config/config-file/#network_mirror) at `https://apollogeddon.github.io/ignition-tfpr/providers/`. Point your CLI configuration at it once, and `tofu init` (or `terraform init`) then downloads the provider for your platform, picks up new releases, and checks each download against its release's `SHA256SUMS`.
+This site serves every release as a [provider network mirror](https://opentofu.org/docs/cli/config/config-file/#network_mirror) at `https://apollogeddon.github.io/ignition-tofu/providers/`. Point your CLI configuration at it once, and `tofu init` (or `terraform init`) then downloads the provider for your platform, picks up new releases, and checks each download against its release's `SHA256SUMS`.
 
 Add this to your CLI configuration: `~/.tofurc` for OpenTofu, or `%APPDATA%\tofu.rc` on Windows.
 
 ```hcl
 provider_installation {
   network_mirror {
-    url     = "https://apollogeddon.github.io/ignition-tfpr/providers/"
+    url     = "https://apollogeddon.github.io/ignition-tofu/providers/"
     include = ["registry.opentofu.org/apollogeddon/ignition"]
   }
   direct {
@@ -76,8 +76,8 @@ PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
 MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
 
 mkdir -p "$MIRROR"
-curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tfpr/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
-curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tfpr/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
+curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tofu/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
+curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tofu/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
 (cd "$MIRROR" && sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS")
 ```
 

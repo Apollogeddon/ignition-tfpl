@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: bootstrap/Dockerfile
-    container_name: ignition-tfpr
+    container_name: ignition-tofu
     ports:
       - "8088:8088"
     environment:

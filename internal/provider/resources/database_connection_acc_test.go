@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/apollogeddon/ignition-tfpr/internal/provider"
+	"github.com/apollogeddon/ignition-tofu/internal/provider"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )

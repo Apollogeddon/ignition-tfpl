@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/apollogeddon/ignition-tfpr/internal/client"
+	"github.com/apollogeddon/ignition-tofu/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/apollogeddon/ignition-tfpr/internal/client"
-	"github.com/apollogeddon/ignition-tfpr/internal/provider/base"
+	"github.com/apollogeddon/ignition-tofu/internal/client"
+	"github.com/apollogeddon/ignition-tofu/internal/provider/base"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
