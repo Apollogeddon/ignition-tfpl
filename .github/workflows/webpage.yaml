@@ -85,6 +85,12 @@ jobs:
           bash .github/scripts/ci/generate-docs.sh
           bash .github/scripts/ci/migrate-docs.sh
 
+      # the provider network mirror the site serves at /providers/, built from the releases
+      - name: Generate provider mirror
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/ci/generate-mirror.sh
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:

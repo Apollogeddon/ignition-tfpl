@@ -37,21 +37,21 @@ The provider is developed and tested with OpenTofu. It uses plugin protocol 6, s
 
 ## Installation
 
-The provider is not yet published to the OpenTofu or Terraform registry, so `tofu init` cannot download it by itself. Each [GitHub release](https://github.com/apollogeddon/ignition-tfpl/releases) contains a zip for each platform, a `SHA256SUMS` file with its GPG signature, and the provider manifest, in the layout the registries use. Install a release into a local filesystem mirror:
+The provider is not published to the OpenTofu or Terraform registry. Each [GitHub release](https://github.com/apollogeddon/ignition-tfpl/releases) contains a zip for each platform, a `SHA256SUMS` file with its GPG signature, and the provider manifest, and the [docs site](https://apollogeddon.github.io/ignition-tfpl/) serves every release as a provider network mirror. Point your CLI configuration (`~/.tofurc`) at it once:
 
-```bash
-VERSION=1.1.0
-PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
-MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
-
-mkdir -p "$MIRROR"
-cd "$MIRROR"
-curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
-curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
-sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS"
+```hcl
+provider_installation {
+  network_mirror {
+    url     = "https://apollogeddon.github.io/ignition-tfpl/providers/"
+    include = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
+  direct {
+    exclude = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
+}
 ```
 
-Then require the provider by that address:
+Then require the provider, and `tofu init` installs it for your platform:
 
 ```hcl
 terraform {
@@ -64,7 +64,7 @@ terraform {
 }
 ```
 
-OpenTofu and Terraform both search `~/.terraform.d/plugins` before going to a registry. For Terraform, use `registry.terraform.io` in place of `registry.opentofu.org` in the mirror path. See the [installation guide](https://apollogeddon.github.io/ignition-tfpl/docs/guides/installation/) for other platforms and for using a locally built provider.
+For Terraform, use `~/.terraformrc` and `registry.terraform.io/apollogeddon/ignition`. See the [installation guide](https://apollogeddon.github.io/ignition-tfpl/docs/guides/installation/) for Windows, offline installs from a local filesystem mirror, and using a locally built provider.
 
 ## Quick start
 

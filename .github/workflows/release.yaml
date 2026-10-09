@@ -63,3 +63,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
+  # The site serves the provider network mirror. Its push-triggered build ran before
+  # GoReleaser attached this release's files, so build and deploy it again now.
+  webpage:
+    needs: publish
+    uses: ./.github/workflows/webpage.yaml
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: write
+      pages: write
+      id-token: write

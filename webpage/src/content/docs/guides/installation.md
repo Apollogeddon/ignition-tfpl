@@ -24,27 +24,25 @@ The provider is not yet published to the OpenTofu or Terraform registry, so `tof
 
 Releases are built for Linux, macOS, Windows and FreeBSD.
 
-### Use a local filesystem mirror
+### Use the network mirror (recommended)
 
-The zips are named in the packed layout that a [filesystem mirror](https://opentofu.org/docs/cli/config/config-file/#filesystem_mirror) expects, so you can place a zip in a mirror directory without unpacking it. On Linux and macOS, OpenTofu and Terraform search `~/.terraform.d/plugins` by default; on Windows the directory is `%APPDATA%\terraform.d\plugins`.
+This site serves every release as a [provider network mirror](https://opentofu.org/docs/cli/config/config-file/#network_mirror) at `https://apollogeddon.github.io/ignition-tfpl/providers/`. Point your CLI configuration at it once, and `tofu init` (or `terraform init`) then downloads the provider for your platform, picks up new releases, and checks each download against its release's `SHA256SUMS`.
 
-Download the release for your platform and verify its checksum:
+Add this to your CLI configuration: `~/.tofurc` for OpenTofu, or `%APPDATA%\tofu.rc` on Windows.
 
-```bash
-VERSION=1.1.0
-PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
-MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
-
-mkdir -p "$MIRROR"
-cd "$MIRROR"
-curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
-curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
-sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS"
+```hcl
+provider_installation {
+  network_mirror {
+    url     = "https://apollogeddon.github.io/ignition-tfpl/providers/"
+    include = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
+  direct {
+    exclude = ["registry.opentofu.org/apollogeddon/ignition"]
+  }
+}
 ```
 
-On macOS, use `shasum -a 256 --check --ignore-missing` in place of `sha256sum --check --ignore-missing`.
-
-The directory path is the provider's full source address: `registry.opentofu.org/apollogeddon/ignition` matches `source = "apollogeddon/ignition"` in OpenTofu. Terraform expands the same short address to `registry.terraform.io/apollogeddon/ignition`, so use `registry.terraform.io` in the path when you use Terraform.
+For Terraform, put it in `~/.terraformrc` (`%APPDATA%\terraform.rc` on Windows) and use `registry.terraform.io/apollogeddon/ignition` in both lists. Every other provider still installs from its registry, through `direct`. If your CLI configuration already has a `provider_installation` block, add the `network_mirror` block and the `exclude` to it.
 
 Then declare the provider in your configuration, for example in `versions.tf`:
 
@@ -59,7 +57,34 @@ terraform {
 }
 ```
 
-Run `tofu init` (or `terraform init`). It installs the provider from the mirror and records its checksums in `.terraform.lock.hcl`.
+Run `tofu init`. It records the provider's checksums in `.terraform.lock.hcl`. To record them for other platforms too, for a team or CI on a different OS, run `tofu providers lock -platform=linux_amd64 -platform=darwin_arm64` with the platforms you use.
+
+The mirror carries checksums but not the GPG signature, so OpenTofu checks each zip against `SHA256SUMS` without verifying the signature. To verify it yourself, check `SHA256SUMS.sig` from the release with `gpg --verify`.
+
+### Use a local filesystem mirror
+
+To install without the network mirror, for example on a machine without internet access, place a release in a local filesystem mirror.
+
+The zips are named in the packed layout that a [filesystem mirror](https://opentofu.org/docs/cli/config/config-file/#filesystem_mirror) expects, so you can place a zip in a mirror directory without unpacking it. On Linux and macOS, OpenTofu and Terraform search `~/.terraform.d/plugins` by default; on Windows the directory is `%APPDATA%\terraform.d\plugins`.
+
+Download the release for your platform and verify its checksum:
+
+```bash
+VERSION=1.1.0
+PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
+MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
+
+mkdir -p "$MIRROR"
+curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
+curl -fsSLO --output-dir "$MIRROR" "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
+(cd "$MIRROR" && sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS")
+```
+
+On macOS, use `shasum -a 256 --check --ignore-missing` in place of `sha256sum --check --ignore-missing`.
+
+The directory path is the provider's full source address: `registry.opentofu.org/apollogeddon/ignition` matches `source = "apollogeddon/ignition"` in OpenTofu. Terraform expands the same short address to `registry.terraform.io/apollogeddon/ignition`, so use `registry.terraform.io` in the path when you use Terraform.
+
+Declare the provider as for the network mirror and run `tofu init` (or `terraform init`). It installs the provider from the mirror directory and records its checksums in `.terraform.lock.hcl`.
 
 The default mirror directories apply only when your CLI configuration has no `provider_installation` block. If it has one, add the mirror to it explicitly:
 
