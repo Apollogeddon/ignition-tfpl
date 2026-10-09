@@ -3,11 +3,11 @@
   <a href="https://apollogeddon.github.io/ignition-tfpl">
     <img src="webpage/public/favicon.png" alt="Logo" width="100" height="100">
   </a>
-  <h3 align="center">Ignition Terraform Provider</h3>
+  <h3 align="center">Ignition TF Provider</h3>
   <p align="center">
-    Manage Inductive Automation Ignition gateway configuration as code.
+    A Terraform and OpenTofu provider for Ignition that manages projects, connections and gateway settings through its REST API.
     <br />
-    <a href="https://apollogeddon.github.io/ignition-tfpl"><strong>Read the documentation</strong></a>
+    <a href="https://apollogeddon.github.io/ignition-tfpl"><strong>Read the docs</strong></a>
     <br />
     <br />
     <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Report a bug</a>
@@ -24,8 +24,8 @@ The provider is developed and tested with OpenTofu. It uses plugin protocol 6, s
 
 ## Features
 
-- **Configuration as code**: declare gateway resources in HCL, review changes with `plan`, and apply them with `apply`.
-- **Secrets encrypted by the gateway**: database, SMTP, notification and identity provider secrets are encrypted through the gateway's own encryption endpoint before they are written to the gateway configuration.
+- **Infrastructure as code**: declare gateway resources in HCL, review changes with `plan`, and apply them with `apply`.
+- **Secure by design**: database, SMTP, notification and identity provider secrets are encrypted through the gateway's own encryption endpoint before they are written to the gateway configuration.
 - **Drift detection**: `plan` reads each resource back from the gateway and shows changes made in the Designer or the gateway web interface.
 - **Gateway-wide settings**: redundancy, Gateway Network connections and settings, and OIDC and SAML identity providers.
 
