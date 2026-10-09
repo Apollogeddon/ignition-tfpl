@@ -8,11 +8,13 @@ const pathname = new URL(Astro.request.url).pathname;
 // Optimized organization logic: single pass to group and sort
 const sections = [
   { label: "Guides", prefix: "guides/" },
-  { label: "Sources", prefix: "reference/" },
+  { label: "Reference", prefix: "reference/" },
 ]
   .map((section) => ({
     ...section,
-    items: docs.filter((d) => d.id.startsWith(section.prefix)).sort((a, b) => a.data.title.localeCompare(b.data.title)),
+    items: docs
+      .filter((d) => d.id.startsWith(section.prefix))
+      .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99) || a.data.title.localeCompare(b.data.title)),
   }))
   .filter((section) => section.items.length > 0);
 

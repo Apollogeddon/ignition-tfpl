@@ -19,7 +19,7 @@
   --sl-border-radius: 8px;
 
   /* Shared Palette (Standard) */
-  --sl-color-accent-secondary: #5eead4; /* Teal accent for TF Provider */
+  --sl-color-accent-secondary: #f0abfc; /* Magenta accent for the Terraform provider */
 }
 
 /* Dark Mode Variables (Default) */
@@ -34,10 +34,10 @@
   --sl-color-hairline: #27272a;
 
   /* Accent */
-  --sl-color-accent-low: #042f2e;
-  --sl-color-accent: #14b8a6;
-  --sl-color-accent-rgb: 20, 184, 166;
-  --sl-color-accent-high: #ccfbf1;
+  --sl-color-accent-low: #4a044e;
+  --sl-color-accent: #d946ef;
+  --sl-color-accent-rgb: 217, 70, 239;
+  --sl-color-accent-high: #fae8ff;
 
   /* Semantic Text Colors */
   --sl-color-white: #ffffff;
@@ -68,10 +68,12 @@
   --sl-color-bg-sidebar: #ffffff;
   --sl-color-hairline: #e5e7eb;
 
-  --sl-color-accent-low: #f0fdfa;
-  --sl-color-accent: #0d9488;
-  --sl-color-accent-rgb: 13, 148, 136;
-  --sl-color-accent-high: #134e4a;
+  --sl-color-accent-low: #fdf4ff;
+  --sl-color-accent: #c026d3;
+  --sl-color-accent-rgb: 192, 38, 211;
+  --sl-color-accent-high: #701a75;
+  /* the shared secondary is too pale for the heading gradient on white */
+  --sl-color-accent-secondary: #d946ef;
 
   --sl-color-text: #111827;
   --sl-color-text-muted: #4b5563;
@@ -153,25 +155,6 @@ h6 {
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* Card Styling */
-.card {
-  border: 1px solid var(--sl-color-hairline);
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-:root[data-theme="light"] .card {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  border-color: var(--sl-color-accent);
-  box-shadow: 0 12px 24px -8px rgba(var(--sl-color-accent-rgb), 0.15);
-}
-
 /* Sidebar Active State */
 [aria-current="page"],
 .sidebar-link.active {
@@ -221,6 +204,15 @@ h6 {
 
 .prose li {
   margin-bottom: 0.5rem;
+}
+
+.prose a {
+  color: var(--sl-color-accent);
+  text-underline-offset: 2px;
+}
+
+.prose a:hover {
+  color: var(--sl-color-accent-high);
 }
 
 .prose code:not(pre code) {

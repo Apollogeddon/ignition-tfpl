@@ -1,5 +1,6 @@
 ---
-title: Provider Capabilities
+title: Capabilities
+order: 3
 description: Overview of supported Ignition resources and features.
 ---
 
