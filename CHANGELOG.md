@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.1](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.1.0...v1.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **deps:** Upgrade modules with known vulnerabilities via govulncheck ([70cfed7](https://github.com/Apollogeddon/ignition-tfpl/commit/70cfed723bc9914416e7cab518ba1dbad7f4526d))
+* **resources:** Remove resources deleted outside OpenTofu from state on read ([1d5d387](https://github.com/Apollogeddon/ignition-tfpl/commit/1d5d3872d82bf1055817af61024c1014db9e0cb9))
+* **resources:** Remove resources deleted outside OpenTofu from state on read ([2ec5222](https://github.com/Apollogeddon/ignition-tfpl/commit/2ec52226e86433cede82fa77fd87f44fd8a7bb47))
+
 ## [1.1.0](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.0.0...v1.1.0) (2026-10-08)
 
 
