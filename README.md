@@ -5,60 +5,70 @@
   </a>
   <h3 align="center">Ignition Terraform Provider</h3>
   <p align="center">
-    Manage your Inductive Automation Ignition Gateway infrastructure as code.
+    Manage Inductive Automation Ignition gateway configuration as code.
     <br />
-    <a href="https://apollogeddon.github.io/ignition-tfpl"><strong>Explore the docs »</strong></a>
+    <a href="https://apollogeddon.github.io/ignition-tfpl"><strong>Read the documentation</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Report Bug</a>
+    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Report a bug</a>
     ·
-    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Request Feature</a>
+    <a href="https://github.com/apollogeddon/ignition-tfpl/issues">Request a feature</a>
   </p>
 </div>
 
-## 🚀 Overview
+## Overview
 
-The **Ignition Terraform Provider** allows you to manage Inductive Automation's Ignition Perspective 8.3 infrastructure with [OpenTofu](https://opentofu.org/) or Terraform. Configure Projects, Database Connections, Tag Providers, and Enterprise settings (Redundancy, GAN) alongside your cloud infrastructure.
+`ignition` is an [OpenTofu](https://opentofu.org/) and Terraform provider that configures Ignition 8.3 gateways through the gateway's REST API. Use it to keep projects, database connections, tag providers, security settings, redundancy and Gateway Network settings in version control alongside the rest of your infrastructure.
 
-## ✨ Features
+The provider is developed and tested with OpenTofu. It uses plugin protocol 6, so Terraform 1.0 and later can also load it.
 
-- **Infrastructure as Code**: Version control your Gateway configuration. Manage Projects, Database Connections, and Tag Providers.
-- **Secure by Design**: Sensitive credentials are encrypted in-flight using Ignition's native encryption endpoints before being stored.
-- **Drift Detection**: Automatically detect and reconcile manual changes made in the Designer or Gateway Web Interface.
-- **Enterprise Ready**: Support for complex architectures including Redundancy, Gateway Networks, and Identity Providers (SAML/OIDC).
+## Features
 
-## 📦 Installation
+- **Configuration as code**: declare gateway resources in HCL, review changes with `plan`, and apply them with `apply`.
+- **Secrets encrypted by the gateway**: database, SMTP, notification and identity provider secrets are encrypted through the gateway's own encryption endpoint before they are written to the gateway configuration.
+- **Drift detection**: `plan` reads each resource back from the gateway and shows changes made in the Designer or the gateway web interface.
+- **Gateway-wide settings**: redundancy, Gateway Network connections and settings, and OIDC and SAML identity providers.
 
-### Prerequisites
+## Requirements
 
-- **OpenTofu** (v1.6+) or **Terraform** (v1.0+). The provider is tested with OpenTofu.
-- **Ignition Gateway** (v8.3+)
+- OpenTofu 1.6 or later, or Terraform 1.0 or later
+- An Ignition gateway, version 8.3 or later (the REST API this provider uses was introduced in 8.3.0)
+- An API key for that gateway
 
-### Configuration
+## Installation
 
-Add the provider to your configuration:
+The provider is not yet published to the OpenTofu or Terraform registry, so `tofu init` cannot download it by itself. Each [GitHub release](https://github.com/apollogeddon/ignition-tfpl/releases) contains a zip for each platform, a `SHA256SUMS` file with its GPG signature, and the provider manifest, in the layout the registries use. Install a release into a local filesystem mirror:
+
+```bash
+VERSION=1.1.0
+PLATFORM=linux_amd64 # for example darwin_arm64 or windows_amd64
+MIRROR="$HOME/.terraform.d/plugins/registry.opentofu.org/apollogeddon/ignition"
+
+mkdir -p "$MIRROR"
+cd "$MIRROR"
+curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_${PLATFORM}.zip"
+curl -fsSLO "https://github.com/apollogeddon/ignition-tfpl/releases/download/v${VERSION}/terraform-provider-ignition_${VERSION}_SHA256SUMS"
+sha256sum --check --ignore-missing "terraform-provider-ignition_${VERSION}_SHA256SUMS"
+```
+
+Then require the provider by that address:
 
 ```hcl
 terraform {
   required_providers {
     ignition = {
       source  = "apollogeddon/ignition"
-      version = ">= 0.0.1"
+      version = "~> 1.1"
     }
   }
 }
 ```
 
-| Variable | Description |
-| :--- | :--- |
-| `IGNITION_HOST` | The base URL of the Ignition Gateway (e.g., `http://10.10.1.5:8088`). |
-| `IGNITION_TOKEN` | The API Token generated in the Ignition Gateway Config section. |
+OpenTofu and Terraform both search `~/.terraform.d/plugins` before going to a registry. For Terraform, use `registry.terraform.io` in place of `registry.opentofu.org` in the mirror path. See the [installation guide](https://apollogeddon.github.io/ignition-tfpl/docs/guides/installation/) for other platforms and for using a locally built provider.
 
-## 🛠️ Usage
+## Quick start
 
-### Quick Start
-
-Configure your provider and manage a project in seconds:
+Configure the provider with the gateway's address and an API key, then declare resources:
 
 ```hcl
 provider "ignition" {
@@ -69,28 +79,48 @@ provider "ignition" {
 resource "ignition_project" "example" {
   name        = "MyEnterpriseProject"
   title       = "Enterprise Dashboard"
-  description = "Managed via OpenTofu"
+  description = "Managed by OpenTofu"
   enabled     = true
 }
 ```
 
-## 🧩 Supported Resources
+Instead of setting `host` and `token` in configuration, you can set these environment variables:
 
-The provider supports a comprehensive set of Ignition resources:
+| Variable | Description |
+| :--- | :--- |
+| `IGNITION_HOST` | The base URL of the gateway, for example `http://10.10.1.5:8088`. |
+| `IGNITION_TOKEN` | An API key created on the gateway. |
 
-- **Core System**: Projects, Database Connections, Tag Providers, User Sources, Identity Providers.
-- **Connectivity**: OPC UA Connections, Devices, Gateway Network (GAN).
-- **Settings**: Redundancy, SMTP Profiles, Alarm Journals, Audit Profiles.
-- **Data Storage**: Store-and-Forward engines.
+## Supported resources
 
-See the [Documentation](https://apollogeddon.github.io/ignition-tfpl) for the full list and detailed usage.
+| Area | Resources |
+| :--- | :--- |
+| Core | `ignition_project`, `ignition_database_connection`, `ignition_tag_provider`, `ignition_user_source`, `ignition_identity_provider` |
+| Connectivity | `ignition_opc_ua_connection`, `ignition_device`, `ignition_gan_outgoing` |
+| Gateway settings | `ignition_redundancy`, `ignition_gan_settings`, `ignition_smtp_profile` |
+| Alarming and auditing | `ignition_alarm_journal`, `ignition_alarm_notification_profile`, `ignition_audit_profile` |
+| Data storage | `ignition_store_forward` |
 
-## 🤝 Contributing
+Data sources are available for projects, database connections, tag providers, user sources, SMTP profiles and store-and-forward engines. See the [documentation](https://apollogeddon.github.io/ignition-tfpl) for every attribute.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Development
 
-Run `task hooks` once per clone to install the git hooks: commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses for versioning. `task test` runs the unit tests and `task test:acc` the acceptance tests against a gateway started with `docker compose up`; both download the pinned OpenTofu release into `.bin/` (`.github/scripts/install-tofu.sh`) and run against it. To preview the reference docs locally, generate them with `.github/scripts/ci/generate-docs.sh` and `migrate-docs.sh`; git ignores the output.
+The provider's tooling is pinned under `.forgego/` and run through [Task](https://taskfile.dev/):
 
-## 📄 License
+```bash
+go tool -modfile=.forgego/task/go.mod task hooks     # install the git hooks, once per clone
+go tool -modfile=.forgego/task/go.mod task lint      # format and lint
+go tool -modfile=.forgego/task/go.mod task test      # unit tests
+docker compose up -d                                 # start a test gateway on localhost:8088
+go tool -modfile=.forgego/task/go.mod task test:acc  # acceptance tests against that gateway
+```
+
+`task test` and `task test:acc` download the OpenTofu release pinned in `.github/scripts/install-tofu.sh` into `.bin/` and run against it. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version releases. To preview the reference documentation, run `.github/scripts/ci/generate-docs.sh` and then `.github/scripts/ci/migrate-docs.sh`; git ignores their output.
+
+See [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md) for the CI and release pipeline and [`.github/SECURITY.md`](.github/SECURITY.md) to report a vulnerability. Pull requests are welcome.
+
+## License
 
 Released under the [MIT License](LICENSE).
+
+Ignition is a trademark of Inductive Automation.
