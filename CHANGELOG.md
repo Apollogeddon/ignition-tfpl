@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.1.1...v1.2.0) (2026-10-09)
+
+
+### Features
+
+* Serve the provider from a network mirror on the docs site ([793987e](https://github.com/Apollogeddon/ignition-tfpl/commit/793987e50f6939abbd5d1bd55d6ce0ec611e6c1c))
+* Serve the provider from a network mirror on the docs site ([e756888](https://github.com/Apollogeddon/ignition-tfpl/commit/e75688861330da73bb7a392ba8fe369fdf538b15))
+
 ## [1.1.1](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.1.0...v1.1.1) (2026-10-09)
 
 
