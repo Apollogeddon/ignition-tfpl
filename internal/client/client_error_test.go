@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -191,5 +192,47 @@ func TestClient_APIError_FieldMessages(t *testing.T) {
 	}
 	if !strings.Contains(msg, "Must be integer") {
 		t.Errorf("Error missing field message: %s", msg)
+	}
+}
+
+func TestClient_NotFoundIsErrNotFound(t *testing.T) {
+	for name, body := range map[string]string{
+		"plain":   "no such resource",
+		"apiJSON": `{"success":false,"problem":{"message":"Resource not found"}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(body))
+			}))
+			defer server.Close()
+
+			c, _ := NewClient(server.URL, "token", false)
+			_, err := c.GetSMTPProfile(context.Background(), "missing")
+			if !errors.Is(err, ErrNotFound) {
+				t.Fatalf("expected ErrNotFound, got %v", err)
+			}
+			if name == "apiJSON" {
+				var apiErr *APIErrorResponse
+				if !errors.As(err, &apiErr) || err.Error() != "API error: Resource not found" {
+					t.Errorf("expected the gateway's APIErrorResponse to be kept, got %v", err)
+				}
+			} else if !strings.Contains(err.Error(), "status: 404") {
+				t.Errorf("expected the status in the message, got %v", err)
+			}
+		})
+	}
+}
+
+func TestClient_OtherStatusIsNotErrNotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	c, _ := NewClient(server.URL, "token", false)
+	_, err := c.GetSMTPProfile(context.Background(), "x")
+	if err == nil || errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected a non-ErrNotFound error, got %v", err)
 	}
 }

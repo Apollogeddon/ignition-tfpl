@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -81,6 +82,18 @@ type IgnitionClient interface {
 	DeleteDevice(ctx context.Context, name, signature string) error
 }
 
+// ErrNotFound reports that the gateway answered 404 Not Found: the thing
+// requested does not exist. Match it with errors.Is.
+var ErrNotFound = errors.New("not found")
+
+// notFoundError marks a 404 as ErrNotFound while keeping the gateway's own
+// error, so its message and errors.As(*APIErrorResponse) are unchanged.
+type notFoundError struct{ err error }
+
+func (e notFoundError) Error() string        { return e.err.Error() }
+func (e notFoundError) Unwrap() error        { return e.err }
+func (e notFoundError) Is(target error) bool { return target == ErrNotFound }
+
 type Client struct {
 	HostURL    string
 	HTTPClient *retryablehttp.Client
@@ -131,15 +144,23 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body []byte
 	}
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		var apiErr APIErrorResponse
-		if err := json.Unmarshal(bodyBytes, &apiErr); err == nil &&
-			(apiErr.Problem != nil || len(apiErr.Messages) > 0 || len(apiErr.FieldMessages) > 0) {
-			return nil, &apiErr
+		err := statusError(res.StatusCode, bodyBytes)
+		if res.StatusCode == http.StatusNotFound {
+			return nil, notFoundError{err}
 		}
-		return nil, fmt.Errorf("status: %d, body: %s", res.StatusCode, bodyBytes)
+		return nil, err
 	}
 
 	return bodyBytes, nil
+}
+
+func statusError(status int, body []byte) error {
+	var apiErr APIErrorResponse
+	if err := json.Unmarshal(body, &apiErr); err == nil &&
+		(apiErr.Problem != nil || len(apiErr.Messages) > 0 || len(apiErr.FieldMessages) > 0) {
+		return &apiErr
+	}
+	return fmt.Errorf("status: %d, body: %s", status, body)
 }
 
 func (c *Client) GetResource(ctx context.Context, resourceType, name string, dest any) error {

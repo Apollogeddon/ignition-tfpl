@@ -218,7 +218,7 @@ func (r *DeviceResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	res, err := r.generic.GetFunc(ctx, data.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Error reading resource", err.Error())
+		base.HandleReadError(ctx, resp, err)
 		return
 	}
 
