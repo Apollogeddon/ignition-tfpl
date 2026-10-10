@@ -56,9 +56,9 @@ updates:
         patterns: ["@apollogeddon/*"]
       dependencies:
         patterns: ["*"]
-    # Repository tooling and the site don't ship in the provider, so no release.
+    # release.json excludes these files from the provider, so this releases nothing
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
     # astro-mermaid accepts mermaid 10 or 11 only, so a major mermaid update
     # breaks the webpage's install until astro-mermaid supports it
     ignore:
@@ -78,8 +78,9 @@ updates:
         patterns: ["*"]
     commit-message:
       prefix: "chore(ci)"
-    # CI deliberately tracks forgejs's reusable workflows at @main.
+    # CI deliberately tracks the forge reusable workflows at @main.
     ignore:
       - dependency-name: "apollogeddon/forgejs"
+      - dependency-name: "apollogeddon/forgego"
     cooldown:
       default-days: 3

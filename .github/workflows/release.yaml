@@ -2,6 +2,10 @@ name: Release
 
 on:
   workflow_call:
+    outputs:
+      pr_number:
+        description: "The release pull request release-please opened or updated; empty if none"
+        value: ${{ jobs.version.outputs.pr_number }}
   workflow_dispatch:
 
 permissions:
@@ -14,6 +18,8 @@ jobs:
     timeout-minutes: 15
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
+      # the release pull request release-please opened or updated, if any
+      pr_number: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).number || '' }}
     steps:
       - name: Release Please
         id: release
