@@ -1,5 +1,6 @@
 {
   "name": "ignition-tofu",
+  "description": "OpenTofu and Terraform provider for configuring Ignition gateways as code",
   "private": true,
   "type": "module",
   "scripts": {
