@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1](https://github.com/Apollogeddon/ignition-tofu/compare/v1.2.0...v1.2.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **deps:** Bump forgejs to 4.0.0 and let Dependabot update it ([5c841e7](https://github.com/Apollogeddon/ignition-tofu/commit/5c841e78275b0d93ce0450bf6ead845649c5067d))
+* **deps:** Bump forgejs to 4.0.0, which bundles with tsdown instead of tsup ([7e8696d](https://github.com/Apollogeddon/ignition-tofu/commit/7e8696de29abadeaa6bf8abe1a185f0359b5db7b))
+* **deps:** Override katex to a patched version ([#66](https://github.com/Apollogeddon/ignition-tofu/issues/66)) ([2ea036f](https://github.com/Apollogeddon/ignition-tofu/commit/2ea036f0569104d33310805d2365ef5553d00089))
+
 ## [1.2.0](https://github.com/Apollogeddon/ignition-tfpl/compare/v1.1.1...v1.2.0) (2026-10-09)
 
 
