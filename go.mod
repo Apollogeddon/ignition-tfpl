@@ -1,8 +1,6 @@
 module github.com/apollogeddon/ignition-tofu
 
-go 1.26.0
-
-toolchain go1.27.0
+go 1.27.0
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
