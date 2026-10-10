@@ -10,9 +10,11 @@
     <a href="https://apollogeddon.github.io/ignition-tofu"><strong>Read the docs</strong></a>
     <br />
     <br />
-    <a href="https://github.com/apollogeddon/ignition-tofu/issues">Report a bug</a>
-    ·
-    <a href="https://github.com/apollogeddon/ignition-tofu/issues">Request a feature</a>
+    <a href="https://apollogeddon.github.io/ignition-tofu/docs/guides/installation/">Getting started</a>
+    &middot;
+    <a href="https://apollogeddon.github.io/ignition-tofu/docs/guides/capabilities/">Capabilities</a>
+    &middot;
+    <a href="https://apollogeddon.github.io/ignition-tofu/docs/guides/architecture/">Architecture</a>
   </p>
 </div>
 
@@ -103,9 +105,19 @@ Instead of setting `host` and `token` in configuration, you can set these enviro
 
 Data sources are available for projects, database connections, tag providers, user sources, SMTP profiles and store-and-forward engines. See the [documentation](https://apollogeddon.github.io/ignition-tofu) for every attribute.
 
-## Development
+## Documentation
 
-The provider's tooling is pinned under `.forgego/` and run through [Task](https://taskfile.dev/):
+The full documentation is at [apollogeddon.github.io/ignition-tofu](https://apollogeddon.github.io/ignition-tofu/):
+
+- [Getting started](https://apollogeddon.github.io/ignition-tofu/docs/guides/installation/): installing and configuring the provider.
+- [Capabilities](https://apollogeddon.github.io/ignition-tofu/docs/guides/capabilities/): the Ignition resources and features it supports.
+- [Architecture](https://apollogeddon.github.io/ignition-tofu/docs/guides/architecture/): how the provider is built.
+
+CI and release automation are described in [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md), and security reporting in [`.github/SECURITY.md`](.github/SECURITY.md).
+
+## Contributing
+
+Pull requests are welcome. The provider's tooling is pinned under `.forgego/` and run through [Task](https://taskfile.dev/):
 
 ```bash
 go tool -modfile=.forgego/task/go.mod task hooks     # install the git hooks, once per clone
@@ -116,8 +128,6 @@ go tool -modfile=.forgego/task/go.mod task test:acc  # acceptance tests against 
 ```
 
 `task test` and `task test:acc` download the OpenTofu release pinned in `.github/scripts/install-tofu.sh` into `.bin/` and run against it. Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), which release-please uses to version releases. To preview the reference documentation, run `.github/scripts/ci/generate-docs.sh` and then `.github/scripts/ci/migrate-docs.sh`; git ignores their output.
-
-See [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md) for the CI and release pipeline and [`.github/SECURITY.md`](.github/SECURITY.md) to report a vulnerability. Pull requests are welcome.
 
 ## License
 
